@@ -1,6 +1,162 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const Blog: React.FC = () => {
+    // State để xử lý lỗi hình ảnh
+    const [imgError, setImgError] = useState(false);
+    // State để quản lý số lượng bài viết hiển thị
+    const [visiblePosts, setVisiblePosts] = useState(6);
+    // State để kiểm tra xem đã hiển thị hết bài viết chưa
+    const [showLoadMore, setShowLoadMore] = useState(true);
+
+    // Chuyển đổi chuỗi ngày sang đối tượng Date
+    const parseDate = (dateStr: string) => {
+        const [day, month, year] = dateStr.split('/').map(Number);
+        return new Date(year, month - 1, day);
+    };
+
+    // Blog data with real images and content - tăng số lượng bài viết
+    const allBlogPosts = [
+        {
+            id: 1,
+            title: "Tiến bộ mới trong kỹ thuật thụ tinh ống nghiệm",
+            excerpt: "Nghiên cứu mới từ các chuyên gia hàng đầu về phương pháp cải tiến giúp tăng tỷ lệ thành công của IVF...",
+            image: "/images/medical-fallback.jpg",
+            category: "Kỹ thuật mới",
+            author: "BS. Nguyễn Thị Minh",
+            date: "15/05/2024"
+        },
+        {
+            id: 2,
+            title: "Những điều cần biết về sức khỏe sinh sản nam giới",
+            excerpt: "Tìm hiểu các yếu tố ảnh hưởng đến chất lượng tinh trùng và biện pháp cải thiện khả năng sinh sản...",
+            image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1964&auto=format&fit=crop",
+            category: "Sức khỏe",
+            author: "BS. Trần Văn Nam",
+            date: "08/05/2024"
+        },
+        {
+            id: 3,
+            title: "Hội thảo về sức khỏe sinh sản cho phụ nữ trẻ",
+            excerpt: "Trung tâm Y tế tổ chức hội thảo cung cấp kiến thức về sức khỏe sinh sản dành cho phụ nữ độ tuổi 20-35...",
+            image: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=1780&auto=format&fit=crop",
+            category: "Hoạt động",
+            author: "ThS. Lê Thị Hồng",
+            date: "29/04/2024"
+        },
+        {
+            id: 4,
+            title: "Ảnh hưởng của dinh dưỡng đến khả năng sinh sản",
+            excerpt: "Chế độ ăn uống đóng vai trò quan trọng trong việc cải thiện khả năng sinh sản của cả nam và nữ...",
+            image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?q=80&w=2070&auto=format&fit=crop",
+            category: "Sức khỏe",
+            author: "CN. Dinh dưỡng Phạm Thu Hà",
+            date: "20/04/2024"
+        },
+        {
+            id: 5,
+            title: "Khai trương phòng khám sức khỏe sinh sản số 2",
+            excerpt: "Trung tâm Y tế Tinh Trùng Chill khai trương cơ sở mới tại quận 7, TP.HCM với nhiều trang thiết bị hiện đại...",
+            image: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?q=80&w=2073&auto=format&fit=crop",
+            category: "Thông báo",
+            author: "Ban Truyền thông",
+            date: "15/04/2024"
+        },
+        {
+            id: 6,
+            title: "Ứng dụng trí tuệ nhân tạo trong điều trị vô sinh",
+            excerpt: "Công nghệ AI đang giúp các bác sĩ chẩn đoán và lựa chọn phương pháp điều trị hiệu quả hơn cho từng bệnh nhân...",
+            image: "https://images.unsplash.com/photo-1581093588401-fbb62a02f120?q=80&w=2070&auto=format&fit=crop",
+            category: "Kỹ thuật mới",
+            author: "TS. Hoàng Minh Tuấn",
+            date: "10/04/2024"
+        },
+        {
+            id: 7,
+            title: "Vai trò của hormone trong điều trị vô sinh nữ",
+            excerpt: "Tìm hiểu về các loại hormone quan trọng và tác động của chúng đến khả năng sinh sản của nữ giới...",
+            image: "https://images.unsplash.com/photo-1584982751601-97dcc096659c?q=80&w=2072&auto=format&fit=crop",
+            category: "Sức khỏe",
+            author: "BS. Nguyễn Thị Hương",
+            date: "05/04/2024"
+        },
+        {
+            id: 8,
+            title: "Giải pháp điều trị bất thường tinh trùng",
+            excerpt: "Các phương pháp hiện đại giúp cải thiện chất lượng tinh trùng và tăng khả năng thụ thai tự nhiên...",
+            image: "https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?q=80&w=2070&auto=format&fit=crop",
+            category: "Kỹ thuật mới",
+            author: "BS. Lê Văn Thành",
+            date: "28/03/2024"
+        },
+        {
+            id: 9,
+            title: "Kỹ thuật nuôi cấy trứng mới nhất",
+            excerpt: "Phương pháp nuôi cấy trứng cải tiến giúp nâng cao tỷ lệ thành công trong điều trị IVF...",
+            image: "https://images.unsplash.com/photo-1579165466741-7f35e4755183?q=80&w=1887&auto=format&fit=crop",
+            category: "Kỹ thuật mới",
+            author: "PGS.TS Trần Văn Chính",
+            date: "20/03/2024"
+        },
+        {
+            id: 10,
+            title: "Hiểu đúng về lão hóa trứng ở phụ nữ",
+            excerpt: "Những thông tin quan trọng về quá trình lão hóa trứng và các biện pháp phòng ngừa...",
+            image: "https://images.unsplash.com/photo-1527613426441-4da17471b66d?q=80&w=2070&auto=format&fit=crop",
+            category: "Sức khỏe",
+            author: "BS. Hoàng Thị Mai",
+            date: "15/03/2024"
+        },
+        {
+            id: 11,
+            title: "Phác đồ điều trị vô sinh hiệu quả năm 2024",
+            excerpt: "Cập nhật các phác đồ điều trị vô sinh mới nhất được áp dụng tại các trung tâm hỗ trợ sinh sản hàng đầu...",
+            image: "https://images.unsplash.com/photo-1631815588090-d4bfec5b7e85?q=80&w=1972&auto=format&fit=crop",
+            category: "Kỹ thuật mới",
+            author: "GS.TS Nguyễn Văn Bình",
+            date: "10/03/2024"
+        },
+        {
+            id: 12,
+            title: "Ảnh hưởng của môi trường đến chất lượng tinh trùng",
+            excerpt: "Môi trường sống, chế độ sinh hoạt và các yếu tố môi trường có thể tác động mạnh đến sức khỏe sinh sản nam giới...",
+            image: "https://images.unsplash.com/photo-1523978591478-c753949ff840?q=80&w=2071&auto=format&fit=crop",
+            category: "Sức khỏe",
+            author: "BS. Đặng Minh Hùng",
+            date: "05/03/2024"
+        }
+    ];
+
+    // Sắp xếp bài viết theo thời gian giảm dần (bài mới nhất lên đầu)
+    const sortedBlogPosts = [...allBlogPosts].sort((a, b) => {
+        const dateA = parseDate(a.date);
+        const dateB = parseDate(b.date);
+        return dateB.getTime() - dateA.getTime();
+    });
+
+    // Lấy số lượng bài viết theo state hiện tại
+    const blogPosts = sortedBlogPosts.slice(0, visiblePosts);
+
+    // Featured blog post (most recent)
+    const featuredPost = {
+        title: "Phương pháp mới trong điều trị vô sinh hiếm muộn",
+        excerpt: "Tiến bộ y học mới nhất trong lĩnh vực sinh sản hỗ trợ mang lại hy vọng cho những cặp vợ chồng khó có con. Các kỹ thuật điều trị tiên tiến đã giúp tăng tỷ lệ thành công lên đáng kể, đặc biệt ở những trường hợp khó.",
+        image: "/images/medical-fallback.jpg"
+    };
+
+    // Fallback image nếu có lỗi
+    const fallbackImage = "/images/medical-fallback.jpg";
+
+    // Hàm xử lý khi nhấn nút "Xem thêm bài viết"
+    const handleLoadMore = () => {
+        const newVisiblePosts = visiblePosts + 6;
+        setVisiblePosts(newVisiblePosts);
+
+        // Nếu đã hiển thị tất cả bài viết, ẩn nút "Xem thêm"
+        if (newVisiblePosts >= allBlogPosts.length) {
+            setShowLoadMore(false);
+        }
+    };
+
     return (
         <div className="bg-white py-16">
             <div className="container mx-auto px-4">
@@ -14,19 +170,19 @@ const Blog: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="md:col-span-1 relative h-64 rounded-lg overflow-hidden">
                             <img
-                                src="https://via.placeholder.com/400x300"
+                                src={imgError ? fallbackImage : featuredPost.image}
                                 alt="Bài viết gần đây"
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                                onError={() => setImgError(true)}
                             />
                         </div>
                         <div className="md:col-span-2 flex flex-col justify-center">
                             <h4 className="text-blue-600 text-sm font-semibold mb-2">BÀI VIẾT GẦN ĐÂY</h4>
                             <h3 className="text-2xl font-bold mb-4">
-                                Phòng ngừa và Điều trị Bệnh Hô Hấp trong Mùa Lạnh
+                                {featuredPost.title}
                             </h3>
                             <p className="text-gray-600 mb-4">
-                                Tìm hiểu các biện pháp hiệu quả để bảo vệ sức khỏe hô hấp của bạn và gia đình
-                                trong thời tiết chuyển mùa, cùng các phương pháp điều trị hiện đại.
+                                {featuredPost.excerpt}
                             </p>
                             <a href="#" className="text-blue-600 hover:underline font-semibold">Đọc bài viết</a>
                         </div>
@@ -50,42 +206,52 @@ const Blog: React.FC = () => {
 
                 {/* Blog Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {[1, 2, 3, 4, 5, 6].map((item) => (
-                        <div key={item} className="bg-gray-50 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                            <div className="relative h-48">
+                    {blogPosts.map((post) => (
+                        <div key={post.id} className="bg-gray-50 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                            <div className="relative h-48 overflow-hidden">
                                 <img
-                                    src={`https://via.placeholder.com/400x300?text=Tin+tức+${item}`}
-                                    alt={`Bài viết ${item}`}
-                                    className="w-full h-full object-cover"
+                                    src={post.image}
+                                    alt={post.title}
+                                    className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-500"
+                                    onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.onerror = null; // Tránh lặp vô hạn
+                                        target.src = fallbackImage;
+                                    }}
                                 />
                             </div>
                             <div className="p-6">
-                                <span className="text-blue-600 text-sm font-medium mb-2 block">Kỹ thuật mới</span> {/* Category */}
+                                <span className="text-blue-600 text-sm font-medium mb-2 block">{post.category}</span>
                                 <h3 className="text-xl font-bold mb-2">
-                                    Bệnh viện triển khai phòng khám chuyên khoa mới {item}
+                                    {post.title}
                                 </h3>
                                 <p className="text-gray-600 text-sm mb-4">
-                                    Bệnh viện Nhân dân 115 vừa đưa vào hoạt động phòng khám chuyên khoa mới với trang thiết bị hiện đại...
+                                    {post.excerpt}
                                 </p>
                                 <div className="flex items-center text-sm text-gray-600">
                                     <img
-                                        src="https://via.placeholder.com/32"
-                                        alt="Tác giả"
+                                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=random`}
+                                        alt={post.author}
                                         className="w-6 h-6 rounded-full mr-2"
                                     />
-                                    <span>BS. Trần Văn B | 10/03/2024</span>
+                                    <span>{post.author} | {post.date}</span>
                                 </div>
                             </div>
                         </div>
                     ))}
                 </div>
 
-                {/* Load More Button - Add back if needed */}
-                <div className="text-center mt-12">
-                    <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        Xem thêm bài viết
-                    </button>
-                </div>
+                {/* Load More Button */}
+                {showLoadMore && (
+                    <div className="text-center mt-12">
+                        <button
+                            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            onClick={handleLoadMore}
+                        >
+                            Xem thêm bài viết
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

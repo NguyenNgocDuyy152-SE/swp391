@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Blog from './Blog';
 
-const Home: React.FC = () => {
+export const Home: React.FC = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
 
     const slides = [
-        'https://images.unsplash.com/photo-1638913662380-9799def8ffb1?q=80&w=1200&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=1200&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1200&auto=format&fit=crop',
-        'https://images.unsplash.com/photo-1631563019676-daa32d18a8c3?q=80&w=1200&auto=format&fit=crop'
+        '/h1.jpg',
+        '/h2.png',
+        '/h3.jpg',
+        '/h4.jpg'
     ];
 
     useEffect(() => {
@@ -22,7 +22,7 @@ const Home: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Hero Section with Slideshow */}
-            <div className="relative h-[500px] overflow-hidden">
+            <div className="relative h-[550px] overflow-hidden">
                 {/* Slideshow */}
                 {slides.map((slide, index) => (
                     <div
@@ -30,12 +30,14 @@ const Home: React.FC = () => {
                         className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100' : 'opacity-0'
                             }`}
                     >
-                        <img
-                            src={slide}
-                            alt={`Slide ${index + 1}`}
-                            className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-blue-900 bg-opacity-60"></div>
+                        <div className="w-full h-full relative">
+                            <img
+                                src={slide}
+                                alt={`Slide ${index + 1}`}
+                                className="w-full h-full object-cover object-center"
+                            />
+                            <div className="absolute inset-0 bg-blue-900 bg-opacity-40"></div>
+                        </div>
                     </div>
                 ))}
 
@@ -43,7 +45,7 @@ const Home: React.FC = () => {
                 <div className="relative z-10 container mx-auto px-4 h-full flex items-center">
                     <div className="max-w-3xl text-white">
                         <h1 className="text-4xl font-bold mb-4">
-                            Trung Tâm Y Tế Tinh Chùng Chill
+                            Trung Tâm Y Tế Tinh Trùng Chill
                         </h1>
                         <p className="text-lg mb-8">
                             Với đội ngũ bác sĩ chuyên khoa đầu ngành và công nghệ hiện đại hàng đầu, chúng tôi tự hào là đơn vị tiên phong trong lĩnh vực điều trị vô sinh hiếm muộn tại Việt Nam. Trung tâm đã giúp hơn 5.000 cặp vợ chồng hiện thực hóa ước mơ làm cha mẹ, với tỷ lệ thành công cao nhất khu vực.
@@ -190,9 +192,9 @@ const Home: React.FC = () => {
                         <div>
                             <h3 className="text-lg font-semibold mb-4">Liên hệ</h3>
                             <ul className="space-y-2">
-                                <li>CSKH: (028) 38.683.496 - 1900 09.99.83</li>
-                                <li>Khám VIP: (028) 38.684.539 - 0902.768.115</li>
-                                <li>Email: bvnd115tphcm@gmail.com</li>
+                                <li>CSKH: (028) 38.666.888 - 1900 09.68.68</li>
+                                <li>Khám VIP: (028) 38.666.999 - 0915.139.971</li>
+                                <li>Email: tinhtrungchill@gmail.com</li>
                             </ul>
                         </div>
                     </div>
@@ -202,4 +204,3 @@ const Home: React.FC = () => {
     );
 };
 
-export default Home; 

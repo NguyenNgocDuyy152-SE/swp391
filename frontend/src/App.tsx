@@ -1,12 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import Home from './components/Home';
+import { Home } from './components/Home';
 import About from './components/About';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Blog from './components/Blog';
 import Services from './components/Services';
+import Contact from './components/Contact';
 import Appointment from './pages/Appointment';
 
 function App() {
@@ -211,6 +212,12 @@ function App() {
           <div className="min-h-screen bg-gray-50">
             <Navbar />
             <Services />
+          </div>
+        } />
+        <Route path="/contact" element={
+          <div className="min-h-screen bg-gray-50">
+            <Navbar />
+            <Contact />
           </div>
         } />
         <Route path="/appointment" element={<Appointment />} />
