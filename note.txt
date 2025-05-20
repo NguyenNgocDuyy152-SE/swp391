@@ -1,0 +1,25 @@
+Gender Healthcare Service Management System
+webapp điều trị hiếm muộn
+khách vãng lai:
+- Trang chủ giới thiệu cơ sở, dịch vụ 
+- blog chia sẻ kinh nghiệm
+- xem giá
+- đặt lịch hẹn
+- đặt câu hỏi tư vấn
+
+Người dùng:
+- đăng ký các dịch vụ điều trị hiếm muộn
+- chỉ dịnh bác sĩ điều trị hiếm muộn.
+- Quản lý quá trình điều trị hiếm muộn
+- theo dõi kết quả thụ thai
+- Hệ thống nhắc nhở xem lịch trình chi tiết từ lịch
+
+Bác sĩ:
+- Hệ thống cho phép các bác sĩ ghi lại các kết quả xét nghiệm, khám bệnh
+- theo dõi sự tiến triển của quá trình điều trị.
+- xem lịch hẹn khám
+
+admin:
+- Quản lý thông tin bác sĩ: thông tin chung, bằng cấp, chuyên môn, lịch làm việc, ...
+- Quản lý rating, feedback.
+- Quản lý hồ sơ người dùng, lịch sử đơn đặt điều trị hiếm muộn.
