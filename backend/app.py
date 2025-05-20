@@ -23,7 +23,7 @@ app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'your-email@gmail.com')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'your-app-password')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'Gender Healthcare <your-email@gmail.com>')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'TINH TRUNG CHILL <your-email@gmail.com>')
 
 mail = Mail(app)
 
@@ -436,7 +436,7 @@ def schedule_appointment():
 
 def send_confirmation_email(appointment_data):
     """Send confirmation email to the user who requested an appointment"""
-    subject = f"Xác nhận đặt lịch tư vấn - {appointment_data['serviceType']}"
+    subject = f"TINH TRUNG CHILL - Xác nhận đặt lịch tư vấn - {appointment_data['serviceType']}"
     
     # Format date and time for better readability
     date_obj = datetime.strptime(appointment_data['preferredDate'], '%Y-%m-%d')
@@ -450,7 +450,7 @@ def send_confirmation_email(appointment_data):
             
             <p>Kính gửi <strong>{appointment_data['fullName']}</strong>,</p>
             
-            <p>Cảm ơn bạn đã đặt lịch tư vấn tại Gender Healthcare. Chúng tôi đã nhận được yêu cầu đặt lịch của bạn với các thông tin sau:</p>
+            <p>Cảm ơn bạn đã đặt lịch tư vấn tại TINH TRUNG CHILL. Chúng tôi đã nhận được yêu cầu đặt lịch của bạn với các thông tin sau:</p>
             
             <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
                 <p><strong>Dịch vụ:</strong> {appointment_data['serviceType']}</p>
@@ -463,7 +463,7 @@ def send_confirmation_email(appointment_data):
             <p>Nếu bạn cần thay đổi lịch hẹn hoặc có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email này hoặc gọi đến số hotline: <strong>0123 456 789</strong>.</p>
             
             <p style="margin-top: 20px;">Trân trọng,</p>
-            <p><strong>Đội ngũ Gender Healthcare</strong></p>
+            <p><strong>Đội ngũ TINH TRUNG CHILL</strong></p>
             
             <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 10px;">
                 <p>Email này được gửi tự động, vui lòng không trả lời email này.</p>
