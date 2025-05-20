@@ -6,6 +6,8 @@ import About from './components/About';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Blog from './pages/Blog';
+import Services from './components/Services';
+import Appointment from './pages/Appointment';
 
 function App() {
   return (
@@ -199,7 +201,19 @@ function App() {
             <About />
           </div>
         } />
-        <Route path="/blog" element={<Blog />} />
+        <Route path="/blog" element={
+          <div className="min-h-screen bg-gray-50">
+            <Navbar />
+            <Blog />
+          </div>
+        } />
+        <Route path="/services" element={
+          <div className="min-h-screen bg-gray-50">
+            <Navbar />
+            <Services />
+          </div>
+        } />
+        <Route path="/appointment" element={<Appointment />} />
       </Routes>
     </Router>
   );
