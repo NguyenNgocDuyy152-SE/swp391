@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './components/Home';
 import About from './components/About';
-import Services from './components/Services';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Blog from './pages/Blog';
@@ -200,16 +199,7 @@ function App() {
             <About />
           </div>
         } />
-<<<<<<< HEAD
         <Route path="/blog" element={<Blog />} />
-=======
-        <Route path="/services" element={
-          <div className="min-h-screen bg-gray-50">
-            <Navbar />
-            <Services />
-          </div>
-        } />
->>>>>>> 4b3e86717155726073890006aa386792599336c3
       </Routes>
     </Router>
   );

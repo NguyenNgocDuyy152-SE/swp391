@@ -1,4 +1,5 @@
 import React from 'react';
+import Blog from './Blog';
 
 const Home: React.FC = () => {
     return (
@@ -56,6 +57,9 @@ const Home: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Blog Section */}
+            <Blog />
 
             {/* Contact Info */}
             <div className="container mx-auto px-4 py-12">
