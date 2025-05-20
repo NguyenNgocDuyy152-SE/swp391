@@ -165,11 +165,11 @@ const Services: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h1 className="text-4xl font-semibold text-blue-900 mb-2">
-            Dịch Vụ Điều Trị Hiếm Muộn
+            Dịch Vụ Điều Trị
           </h1>
           <div className="w-40 h-1 bg-blue-800 mx-auto my-4"></div>
           <p className="mt-6 text-lg text-gray-700 max-w-3xl mx-auto font-light leading-relaxed">
-            Đội ngũ chuyên gia của chúng tôi sẽ đồng hành cùng bạn trên hành trình hiện thực hóa ước mơ làm cha mẹ 
+            Đội ngũ chuyên gia của chúng tôi sẽ đồng hành cùng bạn trên hành trình hiện thực hóa ước mơ làm cha mẹ
             với các dịch vụ y tế chuyên biệt, công nghệ hiện đại và phác đồ điều trị cá nhân hóa.
           </p>
         </div>
@@ -206,7 +206,7 @@ const Services: React.FC = () => {
                 </div>
               </div>
               <div className="px-8 py-5 bg-gray-50 border-t border-gray-100">
-                <button 
+                <button
                   onClick={() => handleAppointment(service.title)}
                   className="w-full flex justify-center py-2.5 px-4 border border-blue-800 rounded-md shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transition-colors duration-200"
                 >
@@ -224,7 +224,7 @@ const Services: React.FC = () => {
               Mỗi trường hợp hiếm muộn đều có những đặc thù riêng. Chúng tôi cam kết tôn trọng sự riêng tư và
               cung cấp giải pháp tối ưu cho từng bệnh nhân.
             </p>
-            <button 
+            <button
               onClick={() => handleAppointment()}
               className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transition-colors duration-200"
             >

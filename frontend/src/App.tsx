@@ -5,7 +5,7 @@ import Home from './components/Home';
 import About from './components/About';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Blog from './pages/Blog';
+import Blog from './components/Blog';
 import Services from './components/Services';
 import Appointment from './pages/Appointment';
 
