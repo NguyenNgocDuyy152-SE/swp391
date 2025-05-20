@@ -5,6 +5,7 @@ import Home from './components/Home';
 import About from './components/About';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Blog from './pages/Blog';
 
 function App() {
   return (
@@ -59,7 +60,7 @@ function App() {
             <div className="bg-white p-8 shadow rounded-lg">
               <h2 className="text-xl font-semibold mb-4">Liệu trình điều trị</h2>
               <p className="text-gray-600 mb-6">Thông tin về các liệu trình điều trị hiện tại của bạn.</p>
-              
+
               <div className="mb-8 border-b pb-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Liệu trình 1: Điều trị hormon</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -81,7 +82,7 @@ function App() {
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Liệu trình 2: Bổ sung dinh dưỡng</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -108,7 +109,7 @@ function App() {
           <Route path="profile" element={
             <div className="bg-white p-8 shadow rounded-lg">
               <h2 className="text-xl font-semibold mb-6">Thông tin cá nhân</h2>
-              
+
               <form className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -157,7 +158,7 @@ function App() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="pt-5">
                   <div className="flex justify-end">
                     <button
@@ -198,6 +199,7 @@ function App() {
             <About />
           </div>
         } />
+        <Route path="/blog" element={<Blog />} />
       </Routes>
     </Router>
   );

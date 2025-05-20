@@ -57,27 +57,6 @@ const Home: React.FC = () => {
                 </div>
             </div>
 
-            {/* Featured News */}
-            <div className="bg-gray-100 py-12">
-                <div className="container mx-auto px-4">
-                    <h2 className="text-3xl font-bold mb-8">Tin tức nổi bật</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {[1, 2, 3].map((item) => (
-                            <div key={item} className="bg-white rounded-lg shadow-md overflow-hidden">
-                                <div className="h-48 bg-gray-200"></div>
-                                <div className="p-6">
-                                    <h3 className="text-xl font-semibold mb-2">Tiêu đề tin tức {item}</h3>
-                                    <p className="text-gray-600 mb-4">
-                                        Mô tả ngắn về tin tức và các hoạt động của bệnh viện...
-                                    </p>
-                                    <a href="#" className="text-blue-600 hover:underline">Xem thêm</a>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
             {/* Contact Info */}
             <div className="container mx-auto px-4 py-12">
                 <div className="bg-white rounded-lg shadow-md p-8">

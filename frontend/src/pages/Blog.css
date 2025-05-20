@@ -1,0 +1,15 @@
+.blog-container {
+    padding: 20px;
+    text-align: center;
+}
+
+.blog-container h1 {
+    color: #0a2351;
+    /* Màu xanh đậm */
+    margin-bottom: 20px;
+}
+
+.blog-container p {
+    color: #333;
+    font-size: 1.1rem;
+}
