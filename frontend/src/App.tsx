@@ -6,6 +6,7 @@ import About from './components/About';
 import Services from './components/Services';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Appointment from './pages/Appointment';
 
 function App() {
   return (
@@ -205,6 +206,7 @@ function App() {
             <Services />
           </div>
         } />
+        <Route path="/appointment" element={<Appointment />} />
       </Routes>
     </Router>
   );

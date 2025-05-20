@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // Bộ icons chuyên nghiệp thay vì emoji
 const ServiceIcon = ({ name }: { name: string }) => {
@@ -56,6 +57,15 @@ const ServiceIcon = ({ name }: { name: string }) => {
 };
 
 const Services: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleAppointment = (service: string = '') => {
+    if (service) {
+      navigate(`/appointment?service=${encodeURIComponent(service)}`);
+    } else {
+      navigate('/appointment');
+    }
+  };
   const services = [
     {
       id: 1,
@@ -196,7 +206,10 @@ const Services: React.FC = () => {
                 </div>
               </div>
               <div className="px-8 py-5 bg-gray-50 border-t border-gray-100">
-                <button className="w-full flex justify-center py-2.5 px-4 border border-blue-800 rounded-md shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transition-colors duration-200">
+                <button 
+                  onClick={() => handleAppointment(service.title)}
+                  className="w-full flex justify-center py-2.5 px-4 border border-blue-800 rounded-md shadow-sm text-sm font-medium text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transition-colors duration-200"
+                >
                   Đặt lịch tư vấn
                 </button>
               </div>
@@ -211,7 +224,10 @@ const Services: React.FC = () => {
               Mỗi trường hợp hiếm muộn đều có những đặc thù riêng. Chúng tôi cam kết tôn trọng sự riêng tư và
               cung cấp giải pháp tối ưu cho từng bệnh nhân.
             </p>
-            <button className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transition-colors duration-200">
+            <button 
+              onClick={() => handleAppointment()}
+              className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-800 hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transition-colors duration-200"
+            >
               Liên hệ tư vấn miễn phí
             </button>
           </div>
