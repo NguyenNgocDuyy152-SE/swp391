@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './components/Home';
 import About from './components/About';
+import Services from './components/Services';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 
@@ -196,6 +197,12 @@ function App() {
           <div className="min-h-screen bg-gray-50">
             <Navbar />
             <About />
+          </div>
+        } />
+        <Route path="/services" element={
+          <div className="min-h-screen bg-gray-50">
+            <Navbar />
+            <Services />
           </div>
         } />
       </Routes>
