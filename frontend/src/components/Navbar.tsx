@@ -1,11 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Navbar: React.FC = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        // Check if user is logged in
+        const token = localStorage.getItem('token');
+        setIsLoggedIn(!!token);
+    }, []);
 
     const handleLogout = () => {
-        // Add logout logic here
+        localStorage.removeItem('token');
         setIsLoggedIn(false);
+        navigate('/');
     };
 
     return (
@@ -13,42 +22,50 @@ const Navbar: React.FC = () => {
             <div className="max-w-7xl mx-auto px-4">
                 <div className="flex justify-between h-16">
                     <div className="flex items-center">
-                        <a href="/" className="flex-shrink-0 flex items-center">
-                            <span className="text-xl font-bold text-gray-800">Logo</span>
-                        </a>
+                        <Link to="/" className="flex-shrink-0 flex items-center">
+                            <span className="text-xl font-bold text-gray-800">Healthcare</span>
+                        </Link>
                     </div>
 
                     <div className="flex items-center space-x-4">
-                        <a href="/" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        <Link to="/" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
                             Home
-                        </a>
-                        <a href="/about" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        </Link>
+                        <Link to="/about" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
                             About
-                        </a>
-                        <a href="/services" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        </Link>
+                        <Link to="/services" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
                             Services
-                        </a>
-                        <a href="/blog" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        </Link>
+                        <Link to="/blog" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
                             Blog
-                        </a>
-                        <a href="/contact" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        </Link>
+                        <Link to="/contact" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
                             Contact
-                        </a>
+                        </Link>
 
                         {isLoggedIn ? (
-                            <button
-                                onClick={handleLogout}
-                                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-                            >
-                                Logout
-                            </button>
+                            <div className="flex items-center space-x-4">
+                                <Link
+                                    to="/dashboard"
+                                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                                >
+                                    Dashboard
+                                </Link>
+                                <button
+                                    onClick={handleLogout}
+                                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                                >
+                                    Logout
+                                </button>
+                            </div>
                         ) : (
-                            <a
-                                href="/login"
+                            <Link
+                                to="/login"
                                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                             >
                                 Login
-                            </a>
+                            </Link>
                         )}
                     </div>
                 </div>
