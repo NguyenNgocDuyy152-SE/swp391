@@ -112,18 +112,32 @@ const Appointment: React.FC = () => {
       setIsSubmitting(true);
       
       try {
-        // Giả lập API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Gọi API đặt lịch tư vấn
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/appointment/schedule`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
         
-        console.log('Form submitted:', formData);
-        setSubmitSuccess(true);
+        const data = await response.json();
         
-        // Reset form after successful submission
-        setTimeout(() => {
-          navigate('/');
-        }, 3000);
+        if (response.ok) {
+          console.log('Appointment scheduled:', data);
+          setSubmitSuccess(true);
+          
+          // Reset form after successful submission
+          setTimeout(() => {
+            navigate('/');
+          }, 3000);
+        } else {
+          console.error('Error scheduling appointment:', data.message);
+          alert(`Đã xảy ra lỗi khi đặt lịch: ${data.message}`);
+        }
       } catch (error) {
         console.error('Error submitting form:', error);
+        alert('Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.');
       } finally {
         setIsSubmitting(false);
       }

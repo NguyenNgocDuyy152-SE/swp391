@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from admin_routes import admin_bp  # Import blueprint admin
 from functools import wraps
+from flask_mail import Mail, Message
 
 # Load environment variables
 load_dotenv()
@@ -15,6 +16,16 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-123')
+
+# Email Configuration
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'your-email@gmail.com')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'your-app-password')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'Gender Healthcare <your-email@gmail.com>')
+
+mail = Mail(app)
 
 # Register admin blueprint
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
@@ -47,6 +58,27 @@ def create_users_table():
     cursor.close()
     conn.close()
 
+def create_consultation_requests_table():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS consultation_requests (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            full_name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            phone VARCHAR(20) NOT NULL,
+            service_type VARCHAR(255) NOT NULL,
+            preferred_date DATE NOT NULL,
+            preferred_time VARCHAR(50) NOT NULL,
+            message TEXT,
+            status ENUM('pending', 'confirmed', 'completed', 'canceled') NOT NULL DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    cursor.close()
+    conn.close()
+
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -64,6 +96,10 @@ def token_required(f):
             # Verify token
             data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
             
+            # Kiểm tra xem 'user_id' có tồn tại trong data không
+            if 'user_id' not in data:
+                return jsonify({'message': 'Token is missing user_id'}), 401
+            
             # Get current user
             conn = get_db_connection()
             cursor = conn.cursor(dictionary=True)
@@ -77,6 +113,8 @@ def token_required(f):
                 
         except jwt.ExpiredSignatureError:
             return jsonify({'message': 'Token has expired'}), 401
+        except KeyError as ke:
+            return jsonify({'message': f'Token missing required field: {str(ke)}'}), 401
         except Exception as e:
             return jsonify({'message': f'Token is invalid: {str(e)}'}), 401
         
@@ -91,6 +129,10 @@ def role_required(allowed_roles):
         @wraps(f)
         @token_required
         def decorated_function(*args, **kwargs):
+            # Kiểm tra nếu user không có role hoặc role không hợp lệ
+            if not request.user or 'role' not in request.user:
+                return jsonify({'message': 'User role not defined'}), 401
+            
             if request.user['role'] not in allowed_roles:
                 return jsonify({'message': 'Permission denied'}), 403
             return f(*args, **kwargs)
@@ -183,10 +225,13 @@ def login():
         conn.close()
 
         if user and check_password_hash(user['password'], password):
+            # Đảm bảo role luôn tồn tại trong token
+            role = user.get('role', 'patient')  # Mặc định là 'patient' nếu không có role
+            
             token = jwt.encode({
                 'user_id': user['id'],
                 'email': user['email'],
-                'role': user['role'],
+                'role': role,
                 'exp': datetime.utcnow() + timedelta(days=1)
             }, app.config['SECRET_KEY'])
             return jsonify({
@@ -337,10 +382,110 @@ def get_all_patients():
     except Exception as e:
         return jsonify({'message': f'Error retrieving patients: {str(e)}'}), 500
 
+@app.route('/api/appointment/schedule', methods=['POST'])
+def schedule_appointment():
+    data = request.get_json()
+    
+    # Validate required fields
+    required_fields = ['fullName', 'email', 'phone', 'serviceType', 'preferredDate', 'preferredTime']
+    if not all(field in data for field in required_fields):
+        return jsonify({'message': 'Missing required fields'}), 400
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Save the appointment request to the database
+        query = '''
+            INSERT INTO consultation_requests 
+            (full_name, email, phone, service_type, preferred_date, preferred_time, message, status) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        '''
+        values = (
+            data['fullName'],
+            data['email'],
+            data['phone'],
+            data['serviceType'],
+            data['preferredDate'],
+            data['preferredTime'],
+            data.get('message', ''),
+            'pending'
+        )
+        cursor.execute(query, values)
+        request_id = cursor.lastrowid
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        # Send confirmation email
+        try:
+            send_confirmation_email(data)
+            return jsonify({
+                'message': 'Appointment request submitted successfully and confirmation email sent',
+                'request_id': request_id
+            }), 201
+        except Exception as mail_error:
+            print(f"Email sending failed: {str(mail_error)}")
+            return jsonify({
+                'message': 'Appointment request submitted successfully but confirmation email failed',
+                'request_id': request_id
+            }), 201
+            
+    except Exception as e:
+        return jsonify({'message': f'Error scheduling appointment: {str(e)}'}), 500
+
+def send_confirmation_email(appointment_data):
+    """Send confirmation email to the user who requested an appointment"""
+    subject = f"Xác nhận đặt lịch tư vấn - {appointment_data['serviceType']}"
+    
+    # Format date and time for better readability
+    date_obj = datetime.strptime(appointment_data['preferredDate'], '%Y-%m-%d')
+    formatted_date = date_obj.strftime('%d/%m/%Y')
+    
+    body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+            <h2 style="color: #0056b3; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">Xác Nhận Đặt Lịch Tư Vấn</h2>
+            
+            <p>Kính gửi <strong>{appointment_data['fullName']}</strong>,</p>
+            
+            <p>Cảm ơn bạn đã đặt lịch tư vấn tại Gender Healthcare. Chúng tôi đã nhận được yêu cầu đặt lịch của bạn với các thông tin sau:</p>
+            
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <p><strong>Dịch vụ:</strong> {appointment_data['serviceType']}</p>
+                <p><strong>Ngày hẹn:</strong> {formatted_date}</p>
+                <p><strong>Giờ hẹn:</strong> {appointment_data['preferredTime']}</p>
+            </div>
+            
+            <p>Đội ngũ của chúng tôi sẽ liên hệ với bạn qua số điện thoại <strong>{appointment_data['phone']}</strong> trong thời gian sớm nhất để xác nhận lịch hẹn này.</p>
+            
+            <p>Nếu bạn cần thay đổi lịch hẹn hoặc có bất kỳ câu hỏi nào, vui lòng liên hệ với chúng tôi qua email này hoặc gọi đến số hotline: <strong>0123 456 789</strong>.</p>
+            
+            <p style="margin-top: 20px;">Trân trọng,</p>
+            <p><strong>Đội ngũ Gender Healthcare</strong></p>
+            
+            <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 10px;">
+                <p>Email này được gửi tự động, vui lòng không trả lời email này.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Create and send email
+    msg = Message(
+        subject=subject,
+        recipients=[appointment_data['email']],
+        html=body
+    )
+    mail.send(msg)
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy'})
 
 if __name__ == '__main__':
     create_users_table()
+    create_consultation_requests_table()
     app.run(debug=True) 
