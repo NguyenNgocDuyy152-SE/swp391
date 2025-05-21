@@ -10,12 +10,19 @@ export interface RegisterData extends LoginCredentials {
   confirmPassword?: string;
 }
 
+export interface PasswordChangeData {
+  current_password: string;
+  new_password: string;
+}
+
 export interface AuthResponse {
   token: string;
   user: {
     id: string;
     email: string;
     name: string;
+    role?: string;
+    password_change_required?: boolean;
   };
 }
 
@@ -37,6 +44,13 @@ export const authService = {
     // Loại bỏ confirmPassword trước khi gửi dữ liệu
     const { confirmPassword, ...userDataToSend } = userData;
     return post<AuthResponse>('/auth/register', userDataToSend, false);
+  },
+  
+  /**
+   * Thay đổi mật khẩu người dùng
+   */
+  changePassword: (passwordData: PasswordChangeData): Promise<any> => {
+    return post<any>('/user/change-password', passwordData);
   },
 
   /**

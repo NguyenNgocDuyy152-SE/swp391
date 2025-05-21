@@ -44,16 +44,38 @@ def get_db_connection():
 def create_users_table():
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            email VARCHAR(255) UNIQUE NOT NULL,
-            password VARCHAR(255) NOT NULL,
-            role ENUM('patient', 'doctor', 'staff') NOT NULL DEFAULT 'patient',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+    
+    # Kiểm tra xem bảng users đã tồn tại chưa
+    cursor.execute("SHOW TABLES LIKE 'users'")
+    table_exists = cursor.fetchone()
+    
+    if not table_exists:
+        # Tạo bảng mới nếu chưa tồn tại
+        cursor.execute('''
+            CREATE TABLE users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                role ENUM('patient', 'doctor', 'staff') NOT NULL DEFAULT 'patient',
+                password_changed TINYINT(1) DEFAULT 1 NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        print("Created users table with all fields")
+    else:
+        # Kiểm tra xem trường password_changed đã tồn tại chưa
+        try:
+            cursor.execute("SHOW COLUMNS FROM users LIKE 'password_changed'")
+            column_exists = cursor.fetchone()
+            
+            if not column_exists:
+                # Thêm trường password_changed nếu chưa tồn tại
+                cursor.execute("ALTER TABLE users ADD COLUMN password_changed TINYINT(1) DEFAULT 1 NOT NULL")
+                print("Added password_changed field to existing users table")
+        except Exception as e:
+            print(f"Error checking or adding password_changed field: {e}")
+    
     conn.commit()
     cursor.close()
     conn.close()
@@ -73,6 +95,24 @@ def create_consultation_requests_table():
             message TEXT,
             status ENUM('pending', 'confirmed', 'completed', 'canceled') NOT NULL DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+def create_doctors_table():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS doctors (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            specialization VARCHAR(255) NOT NULL,
+            qualification VARCHAR(255) NOT NULL,
+            phone VARCHAR(20),
+            bio TEXT,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     ''')
     conn.commit()
@@ -234,15 +274,35 @@ def login():
                 'role': role,
                 'exp': datetime.utcnow() + timedelta(days=1)
             }, app.config['SECRET_KEY'])
-            return jsonify({
-                'message': 'Login successful',
-                'token': token,
-                'user': {
+            
+            # Check if the user needs to change password
+            # Đảm bảo xử lý an toàn nếu trường password_changed chưa tồn tại
+            try:
+                password_changed = 1
+                if 'password_changed' in user:
+                    password_changed = user['password_changed']
+                
+                user_data = {
+                    'id': user['id'],
+                    'name': user['name'],
+                    'email': user['email'],
+                    'role': user['role'],
+                    'password_change_required': password_changed == 0
+                }
+            except Exception as e:
+                print(f"Error processing user data: {str(e)}")
+                # Trả về dữ liệu người dùng cơ bản nếu có lỗi
+                user_data = {
                     'id': user['id'],
                     'name': user['name'],
                     'email': user['email'],
                     'role': user['role']
                 }
+            
+            return jsonify({
+                'message': 'Login successful',
+                'token': token,
+                'user': user_data
             })
         return jsonify({'message': 'Invalid credentials'}), 401
     except Exception as e:
@@ -481,11 +541,202 @@ def send_confirmation_email(appointment_data):
     )
     mail.send(msg)
 
+@app.route('/api/user/change-password', methods=['POST'])
+@token_required
+def change_user_password():
+    """Endpoint để người dùng thay đổi mật khẩu"""
+    user_id = request.user['id']
+    data = request.get_json()
+    
+    if not data or not data.get('current_password') or not data.get('new_password'):
+        return jsonify({'message': 'Thiếu thông tin mật khẩu'}), 400
+    
+    if len(data.get('new_password')) < 8:
+        return jsonify({'message': 'Mật khẩu mới phải có ít nhất 8 ký tự'}), 400
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Get user's current password
+        cursor.execute('SELECT password FROM users WHERE id = %s', (user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
+            cursor.close()
+            conn.close()
+            return jsonify({'message': 'Không tìm thấy người dùng'}), 404
+        
+        # Verify current password
+        if not check_password_hash(user['password'], data['current_password']):
+            cursor.close()
+            conn.close()
+            return jsonify({'message': 'Mật khẩu hiện tại không đúng'}), 401
+        
+        # Hash the new password
+        hashed_password = generate_password_hash(data['new_password'])
+        
+        # Update password and set password_changed = 1
+        cursor.execute(
+            'UPDATE users SET password = %s, password_changed = 1 WHERE id = %s',
+            (hashed_password, user_id)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'message': 'Thay đổi mật khẩu thành công'}), 200
+    
+    except Exception as e:
+        return jsonify({'message': f'Lỗi: {str(e)}'}), 500
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy'})
 
+def update_database_structure():
+    """Cập nhật cấu trúc cơ sở dữ liệu nếu cần thiết"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Kiểm tra và cập nhật bảng users nếu cần
+        try:
+            cursor.execute("SHOW COLUMNS FROM users LIKE 'password_changed'")
+            if not cursor.fetchone():
+                cursor.execute("ALTER TABLE users ADD COLUMN password_changed TINYINT(1) DEFAULT 1 NOT NULL")
+                print("Added password_changed field to users table")
+        except Exception as e:
+            print(f"Error updating users table: {e}")
+        
+        # Kiểm tra và tạo bảng doctors nếu chưa tồn tại
+        cursor.execute("SHOW TABLES LIKE 'doctors'")
+        if not cursor.fetchone():
+            create_doctors_table()
+            print("Created doctors table")
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("Database structure updated successfully")
+    except Exception as e:
+        print(f"Error updating database structure: {e}")
+
+def create_test_doctor():
+    """Tạo tài khoản bác sĩ mẫu để thử nghiệm nếu chưa có"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Xóa tài khoản test cũ nếu có
+        print("Deleting existing test doctor account if exists...")
+        try:
+            cursor.execute("DELETE FROM doctors WHERE user_id IN (SELECT id FROM users WHERE email = 'doctor@example.com')")
+            cursor.execute("DELETE FROM users WHERE email = 'doctor@example.com'")
+            conn.commit()
+        except Exception as e:
+            print(f"Error deleting old test account: {e}")
+            conn.rollback()
+        
+        print("Creating new test doctor account...")
+        
+        # Mật khẩu mặc định: 12345678
+        from werkzeug.security import generate_password_hash
+        hashed_password = generate_password_hash("12345678")
+        
+        # Tạo tài khoản người dùng với vai trò bác sĩ
+        cursor.execute('''
+            INSERT INTO users (name, email, password, role, password_changed) 
+            VALUES (%s, %s, %s, %s, %s)
+        ''', ("Dr. Test Doctor", "doctor@example.com", hashed_password, "doctor", 0))
+        user_id = cursor.lastrowid
+        conn.commit()
+        
+        # Tạo thông tin bác sĩ
+        cursor.execute('''
+            INSERT INTO doctors (user_id, specialization, qualification, phone) 
+            VALUES (%s, %s, %s, %s)
+        ''', (user_id, "General Practice", "MD", "0123456789"))
+        conn.commit()
+        
+        print(f"Created test doctor with ID {user_id}")
+        
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        print(f"Error creating test doctor: {e}")
+
+@app.route('/api/debug/user', methods=['GET'])
+def debug_user():
+    """API debug: Tìm người dùng theo email"""
+    email = request.args.get('email')
+    if not email:
+        return jsonify({'message': 'Missing email parameter'}), 400
+        
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Tìm thông tin người dùng
+        cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
+        user = cursor.fetchone()
+        
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+        
+        # Bỏ mật khẩu ra khỏi kết quả
+        if 'password' in user:
+            user['password'] = '******'
+            
+        # Nếu là bác sĩ, lấy thêm thông tin bác sĩ
+        if user['role'] == 'doctor':
+            cursor.execute('SELECT * FROM doctors WHERE user_id = %s', (user['id'],))
+            doctor = cursor.fetchone()
+            if doctor:
+                user['doctor_details'] = doctor
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'user': user}), 200
+        
+    except Exception as e:
+        return jsonify({'message': f'Error: {str(e)}'}), 500
+
+@app.route('/api/debug/tables', methods=['GET'])
+def debug_tables():
+    """API debug: Liệt kê các bảng và cấu trúc"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        # Lấy danh sách bảng
+        cursor.execute("SHOW TABLES")
+        tables = cursor.fetchall()
+        
+        result = {}
+        
+        for table in tables:
+            table_name = list(table.values())[0]
+            
+            # Lấy cấu trúc bảng
+            cursor.execute(f"DESCRIBE {table_name}")
+            columns = cursor.fetchall()
+            
+            result[table_name] = columns
+            
+        cursor.close()
+        conn.close()
+        
+        return jsonify({'tables': result}), 200
+        
+    except Exception as e:
+        return jsonify({'message': f'Error: {str(e)}'}), 500
+
 if __name__ == '__main__':
     create_users_table()
     create_consultation_requests_table()
-    app.run(debug=True) 
+    create_doctors_table()
+    update_database_structure()
+    create_test_doctor()
+    app.run(debug=True, port=5001) 
