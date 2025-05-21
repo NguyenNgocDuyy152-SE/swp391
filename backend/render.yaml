@@ -30,6 +30,8 @@ services:
         sync: false
       - key: DB_NAME
         sync: false
+      - key: DB_PORT
+        sync: false
 
   # Frontend React app
   - type: web
