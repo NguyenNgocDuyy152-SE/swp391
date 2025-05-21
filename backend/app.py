@@ -194,7 +194,7 @@ def register():
     if role not in ['patient', 'doctor', 'staff']:
         return jsonify({'message': 'Invalid role. Must be patient, doctor, or staff'}), 400
 
-    hashed_password = generate_password_hash(password)
+    hashed_password = generate_password_hash(password, method='sha256')
     
     try:
         conn = get_db_connection()
@@ -574,7 +574,7 @@ def change_user_password():
             return jsonify({'message': 'Mật khẩu hiện tại không đúng'}), 401
         
         # Hash the new password
-        hashed_password = generate_password_hash(data['new_password'])
+        hashed_password = generate_password_hash(data['new_password'], method='sha256')
         
         # Update password and set password_changed = 1
         cursor.execute(
@@ -640,9 +640,15 @@ def create_test_doctor():
         
         print("Creating new test doctor account...")
         
-        # Mật khẩu mặc định: 12345678
+        # Mật khẩu mặc định đơn giản: test123
+        password = "test123"
+        print(f"Test doctor password: {password}")
+        
+        # Sử dụng Werkzeug để hash mật khẩu
         from werkzeug.security import generate_password_hash
-        hashed_password = generate_password_hash("12345678")
+        # Chỉ định phương thức sha256 để đảm bảo nhất quán
+        hashed_password = generate_password_hash(password, method='sha256')
+        print(f"Hashed password: {hashed_password}")
         
         # Tạo tài khoản người dùng với vai trò bác sĩ
         cursor.execute('''
@@ -663,6 +669,20 @@ def create_test_doctor():
         
         cursor.close()
         conn.close()
+        
+        # Test đăng nhập luôn
+        print("Testing login with the created account...")
+        try:
+            from werkzeug.security import check_password_hash
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM users WHERE email = 'doctor@example.com'")
+            user = cursor.fetchone()
+            login_result = check_password_hash(user['password'], password)
+            print(f"Login test result: {'SUCCESS' if login_result else 'FAILED'}")
+            cursor.close()
+        except Exception as e:
+            print(f"Login test error: {e}")
+            
     except Exception as e:
         print(f"Error creating test doctor: {e}")
 

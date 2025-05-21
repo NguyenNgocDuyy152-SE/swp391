@@ -17,7 +17,8 @@ export const apiRequest = async <T>(
 
   // Thêm token xác thực vào header nếu cần
   if (requiresAuth) {
-    const token = localStorage.getItem('token');
+    // Try to get the appropriate token - either user token or admin token
+    const token = localStorage.getItem('token') || localStorage.getItem('adminToken');
     if (!token) {
       throw new Error('Authentication required');
     }
