@@ -184,9 +184,8 @@ export const Home: React.FC = () => {
                         <div>
                             <h3 className="text-lg font-semibold mb-4">Địa chỉ</h3>
                             <ul className="space-y-2">
-                                <li>Khu Kĩ thuật cao - Khám VIP: 818 Sư Vạn Hạnh, P.12, Q.10</li>
-                                <li>Cổng cấp cứu và Khám yêu cầu: 527 Sư Vạn Hạnh, P.12, Q.10</li>
-                                <li>Khoa khám: 88 Thành Thái, P.12, Q.10</li>
+                                <li>Địa chỉ cơ sở 1: 7 Đ. D1, Long Thạnh Mỹ, Thủ Đức, Hồ Chí Minh 700000</li>
+                                <li>Địa chỉ cơ sở 2: Lưu Hữu Phước Tân Lập, Đông Hoà, Dĩ An, Bình Dương</li>
                             </ul>
                         </div>
                         <div>

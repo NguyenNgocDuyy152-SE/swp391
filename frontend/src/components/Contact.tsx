@@ -66,7 +66,7 @@ const Contact: React.FC = () => {
                     {/* Map section */}
                     <div className="lg:col-span-2 rounded-xl overflow-hidden h-[500px] shadow-lg">
                         <iframe
-                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.5177580121497!2d106.66372616108576!3d10.774243992323564!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752ec3c161a3fb%3A0xef77cd47a1cc691e!2zVHLGsOG7nW5nIMSQ4bqhaSBo4buNYyBCw6FjaCBraG9hIC0gxJDhuqFpIGjhu41jIFF14buRYyBnaWEgVFAuSENN!5e0!3m2!1svi!2s!4v1686537388062!5m2!1svi!2s"
+                            src="https://www.google.com/maps?q=7%20%C4%90.%20D1,%20Long%20Th%E1%BA%A1nh%20M%E1%BB%B9,%20Th%E1%BB%A7%20%C4%90%E1%BB%A9c,%20H%E1%BB%93%20Ch%C3%AD%20Minh%20700000&output=embed"
                             width="100%"
                             height="100%"
                             style={{ border: 0 }}
@@ -91,9 +91,7 @@ const Contact: React.FC = () => {
                                 </div>
                                 <div>
                                     <h4 className="text-lg font-semibold text-blue-900 mb-1">Địa chỉ</h4>
-                                    <p className="text-gray-700">Khu Kĩ thuật cao - Khám VIP: 818 Sư Vạn Hạnh, P.12, Q.10, TP.HCM</p>
-                                    <p className="text-gray-700 mt-2">Cổng cấp cứu và Khám yêu cầu: 527 Sư Vạn Hạnh, P.12, Q.10, TP.HCM</p>
-                                    <p className="text-gray-700 mt-2">Khoa khám: 88 Thành Thái, P.12, Q.10, TP.HCM</p>
+                                    <p className="text-gray-700">7 Đ. D1, Long Thạnh Mỹ, Thủ Đức, Hồ Chí Minh 700000</p>
                                 </div>
                             </div>
 
