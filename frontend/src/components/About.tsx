@@ -1,6 +1,87 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const About: React.FC = () => {
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalContent, setModalContent] = useState({
+        title: '',
+        description: '',
+        image: ''
+    });
+
+    const openModal = (title: string, description: string, image: string = '') => {
+        setModalContent({ title, description, image });
+        setModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setModalOpen(false);
+    };
+
+    // Thông tin chi tiết cho các nút
+    const statsInfo = [
+        {
+            title: "Đội ngũ y tế",
+            description: "Trung tâm có hơn 50 chuyên gia y tế hàng đầu, bao gồm bác sĩ sản phụ khoa, chuyên gia phôi học, nhà di truyền học, và chuyên viên xét nghiệm. Đội ngũ của chúng tôi được đào tạo tại các cơ sở y tế hàng đầu trong và ngoài nước, và liên tục cập nhật kiến thức thông qua các hội nghị và khóa đào tạo quốc tế.",
+            image: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?q=80&w=1974&auto=format&fit=crop"
+        },
+        {
+            title: "Ca điều trị thành công",
+            description: "Với hơn 5.000 ca điều trị thành công, chúng tôi tự hào về tỷ lệ thành công cao nhất khu vực. Mỗi năm, trung tâm chúng tôi giúp đỡ hơn 500 gia đình có được niềm vui làm cha mẹ thông qua các phương pháp điều trị hiện đại và hiệu quả nhất.",
+            image: "https://images.unsplash.com/photo-1531983412531-1f49a365ffed?q=80&w=2070&auto=format&fit=crop"
+        },
+        {
+            title: "Kinh nghiệm phục vụ",
+            description: "Với hơn 15 năm kinh nghiệm, Trung tâm Y tế Tinh Trùng Chill là một trong những đơn vị tiên phong trong lĩnh vực y học sinh sản tại Việt Nam. Chúng tôi không ngừng cải tiến và áp dụng những công nghệ mới nhất trong điều trị vô sinh hiếm muộn.",
+            image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop"
+        }
+    ];
+
+    const servicesInfo = [
+        {
+            title: "Thụ tinh trong ống nghiệm (IVF)",
+            description: "Quy trình thụ tinh ống nghiệm của chúng tôi bao gồm các bước: kích thích buồng trứng, lấy trứng, lấy tinh trùng, thụ tinh trong phòng thí nghiệm, nuôi cấy phôi và chuyển phôi vào tử cung. Chúng tôi sử dụng công nghệ tiên tiến như ICSI (tiêm tinh trùng vào bào tương trứng), PGT (xét nghiệm di truyền tiền làm tổ) và ERA (phân tích độ thoải mái nội mạc tử cung) để tối ưu hóa kết quả điều trị.",
+            image: "https://img.freepik.com/free-photo/embryologist-ivf-laboratory-working-with-test-tubes-petri-dishes-research_1303-29732.jpg"
+        },
+        {
+            title: "Đánh giá khả năng sinh sản",
+            description: "Quy trình đánh giá toàn diện bao gồm: khám lâm sàng, xét nghiệm hormone, kiểm tra khả năng phóng noãn, đánh giá tử cung và vòi trứng, phân tích tinh dịch đồ, và các xét nghiệm chuyên sâu khác. Chúng tôi sử dụng các phương pháp chẩn đoán tiên tiến để xác định chính xác nguyên nhân vô sinh và đề xuất phương pháp điều trị phù hợp.",
+            image: "https://img.freepik.com/free-photo/specialist-medical-uniform-examining-woman-hospital_1303-25514.jpg"
+        },
+        {
+            title: "Phân tích và điều trị tinh trùng",
+            description: "Chúng tôi sử dụng công nghệ phân tích tinh trùng CASA (Computer-Aided Sperm Analysis), kỹ thuật MACS (Magnetic-Activated Cell Sorting) và IMSI (Intracytoplasmic Morphologically Selected Sperm Injection) để đánh giá chính xác và lựa chọn tinh trùng chất lượng cao. Các phương pháp điều trị bao gồm liệu pháp hormone, điều trị thuốc kháng sinh, phẫu thuật điều trị giãn tĩnh mạch thừng tinh và các kỹ thuật trích xuất tinh trùng như TESE, PESA và MESA.",
+            image: "https://img.freepik.com/free-photo/laboratory-microscope-with-digital-tablet-desk_1262-4464.jpg"
+        },
+        {
+            title: "Xét nghiệm và tư vấn di truyền",
+            description: "Chúng tôi cung cấp các xét nghiệm di truyền toàn diện bao gồm: xét nghiệm nhiễm sắc thể, xét nghiệm đột biến gen đơn, xét nghiệm PGT-A (kiểm tra bất thường nhiễm sắc thể), PGT-M (kiểm tra đột biến đơn gen) và PGT-SR (kiểm tra bất thường cấu trúc nhiễm sắc thể). Đội ngũ chuyên gia di truyền của chúng tôi cung cấp tư vấn toàn diện về các vấn đề di truyền và các lựa chọn điều trị phù hợp.",
+            image: "https://img.freepik.com/free-photo/scientist-looking-dna-samples-laboratory_23-2148876687.jpg"
+        }
+    ];
+
+    const facilitiesInfo = [
+        {
+            title: "Phòng thí nghiệm hiện đại",
+            description: "Phòng thí nghiệm của chúng tôi được trang bị hệ thống kiểm soát môi trường tiên tiến, tủ cấy vô trùng class II, hệ thống nuôi cấy phôi Time-lapse, hệ thống đông lạnh phôi và tinh trùng vitrification, và kính hiển vi ICSI/IMSI tiên tiến. Tất cả các thiết bị đều đạt tiêu chuẩn quốc tế và được bảo trì thường xuyên.",
+            image: "https://img.freepik.com/free-photo/modern-equipped-laboratory_144627-25526.jpg"
+        },
+        {
+            title: "Phòng tư vấn",
+            description: "Phòng tư vấn được thiết kế tạo không gian ấm cúng và riêng tư, giúp bệnh nhân cảm thấy thoải mái khi chia sẻ thông tin. Mỗi phòng được trang bị hệ thống hiển thị đa phương tiện để bác sĩ có thể giải thích dễ dàng các quy trình và kết quả xét nghiệm cho bệnh nhân.",
+            image: "https://img.freepik.com/free-photo/beautiful-doctor-office-hospital_23-2149326973.jpg"
+        },
+        {
+            title: "Phòng điều trị",
+            description: "Phòng điều trị và phẫu thuật được trang bị hệ thống điều hòa không khí HEPA filtered, đèn mổ LED không tạo bóng, hệ thống siêu âm 4D, thiết bị gây mê và theo dõi bệnh nhân tiên tiến. Các thiết bị này đảm bảo độ chính xác cao trong quá trình can thiệp và an toàn tối đa cho bệnh nhân.",
+            image: "https://img.freepik.com/free-photo/interior-view-operating-room_1170-2254.jpg"
+        },
+        {
+            title: "Khu vực chờ",
+            description: "Khu vực chờ được thiết kế tạo cảm giác thoải mái với ghế sofa êm ái, ánh sáng tự nhiên, và không gian xanh. Chúng tôi cung cấp Wi-Fi miễn phí, nước uống, và các tạp chí thông tin về sức khỏe sinh sản. Khu vực này cũng có không gian riêng cho các cặp đôi muốn có sự riêng tư.",
+            image: "https://img.freepik.com/free-photo/empty-waiting-room-with-chairs-office_23-2148857793.jpg"
+        }
+    ];
+
     return (
         <div className="bg-white py-16">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,95 +117,54 @@ const About: React.FC = () => {
 
                 {/* Stats Section */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-                    <div className="bg-white rounded-xl p-8 shadow-md text-center border-t-4 border-blue-600 hover:shadow-xl transition-shadow">
-                        <div className="text-blue-600 mb-4">
-                            <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path>
-                            </svg>
+                    {statsInfo.map((stat, index) => (
+                        <div
+                            key={index}
+                            className="bg-white rounded-xl p-8 shadow-md text-center border-t-4 border-blue-600 hover:shadow-xl transition-shadow cursor-pointer"
+                            onClick={() => openModal(stat.title, stat.description, stat.image)}
+                        >
+                            <div className="text-blue-600 mb-4">
+                                <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    {index === 0 && <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"></path>}
+                                    {index === 1 && <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd"></path>}
+                                    {index === 2 && <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"></path>}
+                                </svg>
+                            </div>
+                            <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                                {index === 0 && "50+"}
+                                {index === 1 && "5.000+"}
+                                {index === 2 && "15+"}
+                            </h3>
+                            <p className="text-gray-600">{stat.title}</p>
+                            <p className="text-blue-600 mt-2 text-sm">Nhấp để xem chi tiết</p>
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-800 mb-2">50+</h3>
-                        <p className="text-gray-600">Chuyên gia y tế hàng đầu</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-8 shadow-md text-center border-t-4 border-blue-600 hover:shadow-xl transition-shadow">
-                        <div className="text-blue-600 mb-4">
-                            <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd"></path>
-                            </svg>
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-800 mb-2">5.000+</h3>
-                        <p className="text-gray-600">Ca điều trị thành công</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-8 shadow-md text-center border-t-4 border-blue-600 hover:shadow-xl transition-shadow">
-                        <div className="text-blue-600 mb-4">
-                            <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"></path>
-                            </svg>
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-800 mb-2">15+</h3>
-                        <p className="text-gray-600">Năm kinh nghiệm</p>
-                    </div>
+                    ))}
                 </div>
 
                 {/* Our Services with Images */}
                 <div className="mb-16">
                     <h2 className="text-3xl font-bold text-blue-800 mb-6 text-center">Dịch Vụ Chuyên Môn</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
-                            <img
-                                src="https://img.freepik.com/free-photo/embryologist-ivf-laboratory-working-with-test-tubes-petri-dishes-research_1303-29732.jpg"
-                                alt="Thụ tinh trong ống nghiệm"
-                                className="w-full h-64 object-cover"
-                            />
-                            <div className="p-6">
-                                <h3 className="text-xl font-semibold text-gray-800 mb-3">Thụ tinh trong ống nghiệm (IVF)</h3>
-                                <p className="text-gray-600">
-                                    Quy trình thụ tinh ống nghiệm hiện đại với tỷ lệ thành công cao nhất khu vực.
-                                    Đội ngũ bác sĩ giàu kinh nghiệm và trang thiết bị hiện đại giúp tối ưu hóa kết quả điều trị.
-                                </p>
+                        {servicesInfo.map((service, index) => (
+                            <div
+                                key={index}
+                                className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow cursor-pointer"
+                                onClick={() => openModal(service.title, service.description, service.image)}
+                            >
+                                <img
+                                    src={service.image}
+                                    alt={service.title}
+                                    className="w-full h-64 object-cover"
+                                />
+                                <div className="p-6">
+                                    <h3 className="text-xl font-semibold text-gray-800 mb-3">{service.title}</h3>
+                                    <p className="text-gray-600 line-clamp-3">
+                                        {service.description.substring(0, 120)}...
+                                    </p>
+                                    <p className="text-blue-600 mt-2">Nhấp để xem chi tiết</p>
+                                </div>
                             </div>
-                        </div>
-                        <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
-                            <img
-                                src="https://img.freepik.com/free-photo/specialist-medical-uniform-examining-woman-hospital_1303-25514.jpg"
-                                alt="Đánh giá khả năng sinh sản"
-                                className="w-full h-64 object-cover"
-                            />
-                            <div className="p-6">
-                                <h3 className="text-xl font-semibold text-gray-800 mb-3">Đánh giá khả năng sinh sản</h3>
-                                <p className="text-gray-600">
-                                    Chẩn đoán toàn diện về khả năng sinh sản cho cả nam và nữ. Xác định nguyên nhân vô sinh và
-                                    đề xuất phương pháp điều trị phù hợp nhất cho từng trường hợp cụ thể.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
-                            <img
-                                src="https://img.freepik.com/free-photo/laboratory-microscope-with-digital-tablet-desk_1262-4464.jpg"
-                                alt="Phân tích và điều trị tinh trùng"
-                                className="w-full h-64 object-cover"
-                            />
-                            <div className="p-6">
-                                <h3 className="text-xl font-semibold text-gray-800 mb-3">Phân tích và điều trị tinh trùng</h3>
-                                <p className="text-gray-600">
-                                    Chuyên sâu về các vấn đề tinh trùng với công nghệ phân tích hiện đại nhất.
-                                    Phương pháp điều trị cá nhân hóa dựa trên tình trạng cụ thể của từng bệnh nhân.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
-                            <img
-                                src="https://img.freepik.com/free-photo/scientist-looking-dna-samples-laboratory_23-2148876687.jpg"
-                                alt="Xét nghiệm di truyền"
-                                className="w-full h-64 object-cover"
-                            />
-                            <div className="p-6">
-                                <h3 className="text-xl font-semibold text-gray-800 mb-3">Xét nghiệm và tư vấn di truyền</h3>
-                                <p className="text-gray-600">
-                                    Phát hiện sớm các bất thường di truyền có thể ảnh hưởng đến khả năng sinh sản.
-                                    Tư vấn chuyên sâu về các vấn đề di truyền và lựa chọn phương pháp điều trị phù hợp.
-                                </p>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
 
@@ -161,26 +201,24 @@ const About: React.FC = () => {
                         thực hiện trong môi trường an toàn, hỗ trợ và công nghệ cao.
                     </p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <img
-                            src="https://img.freepik.com/free-photo/modern-equipped-laboratory_144627-25526.jpg"
-                            alt="Thiết bị phòng thí nghiệm"
-                            className="rounded-lg shadow-md hover:shadow-lg transition-shadow h-56 w-full object-cover"
-                        />
-                        <img
-                            src="https://img.freepik.com/free-photo/beautiful-doctor-office-hospital_23-2149326973.jpg"
-                            alt="Phòng tư vấn"
-                            className="rounded-lg shadow-md hover:shadow-lg transition-shadow h-56 w-full object-cover"
-                        />
-                        <img
-                            src="https://img.freepik.com/free-photo/interior-view-operating-room_1170-2254.jpg"
-                            alt="Phòng điều trị"
-                            className="rounded-lg shadow-md hover:shadow-lg transition-shadow h-56 w-full object-cover"
-                        />
-                        <img
-                            src="https://img.freepik.com/free-photo/empty-waiting-room-with-chairs-office_23-2148857793.jpg"
-                            alt="Khu vực chờ"
-                            className="rounded-lg shadow-md hover:shadow-lg transition-shadow h-56 w-full object-cover"
-                        />
+                        {facilitiesInfo.map((facility, index) => (
+                            <div
+                                key={index}
+                                className="relative group cursor-pointer"
+                                onClick={() => openModal(facility.title, facility.description, facility.image)}
+                            >
+                                <img
+                                    src={facility.image}
+                                    alt={facility.title}
+                                    className="rounded-lg shadow-md group-hover:shadow-lg transition-shadow h-56 w-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center transition-all duration-300 rounded-lg">
+                                    <p className="text-white font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center px-2">
+                                        {facility.title}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
@@ -237,6 +275,39 @@ const About: React.FC = () => {
                     </p>
                 </div>
             </div>
+
+            {/* Modal */}
+            {modalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-start mb-4">
+                            <h3 className="text-2xl font-bold text-blue-800">{modalContent.title}</h3>
+                            <button
+                                onClick={closeModal}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        {modalContent.image && (
+                            <img
+                                src={modalContent.image}
+                                alt={modalContent.title}
+                                className="w-full h-auto rounded-lg mb-4"
+                            />
+                        )}
+                        <p className="text-gray-700 leading-relaxed">{modalContent.description}</p>
+                        <button
+                            onClick={closeModal}
+                            className="mt-6 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors w-full"
+                        >
+                            Đóng
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
