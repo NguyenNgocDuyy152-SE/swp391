@@ -42,9 +42,9 @@ app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
 # Database configuration
 db_config = {
-    'host': os.getenv('DB_HOST', '127.0.0.1'),
-    'user': os.getenv('DB_USER', 'db_user'),
-    'password': os.getenv('DB_PASSWORD', 'db_password'),
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'user': os.getenv('DB_USER', 'nhatpm'),
+    'password': os.getenv('DB_PASSWORD', '#Nhatfw3124'),
     'database': os.getenv('DB_NAME', 'swp391')
 }
 
