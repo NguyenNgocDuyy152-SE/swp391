@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/authService';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 
 const Login: React.FC = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -9,6 +11,7 @@ const Login: React.FC = () => {
         confirmPassword: '',
         name: ''
     });
+    const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,33 +24,65 @@ const Login: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
         if (!isLogin && formData.password !== formData.confirmPassword) {
-            alert("Passwords don't match!");
+            alert("Mật khẩu không khớp!");
             return;
         }
 
         try {
-            const endpoint = isLogin ? 'http://localhost:5000/api/auth/login' : 'http://localhost:5000/api/auth/register';
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                localStorage.setItem('token', data.token);
-                navigate('/dashboard');
+            if (isLogin) {
+                // Login
+                const response = await authService.login({
+                    email: formData.email,
+                    password: formData.password
+                });
+                
+                localStorage.setItem('token', response.token);
+                
+                // Check if password change is required
+                if (response.user.password_change_required) {
+                    setShowChangePasswordModal(true);
+                } else {
+                    navigate('/dashboard');
+                }
             } else {
-                const error = await response.json();
-                alert(error.message || 'Something went wrong!');
+                // Register
+                const response = await authService.register({
+                    name: formData.name,
+                    email: formData.email,
+                    password: formData.password
+                });
+                
+                localStorage.setItem('token', response.token);
+                navigate('/dashboard');
             }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('An error occurred. Please try again.');
+        } catch (error: any) {
+            console.error('Login error:', error);
+            
+            // Hiển thị thông báo lỗi chi tiết hơn để debug
+            let errorMessage = 'Đã xảy ra lỗi. Vui lòng thử lại.';
+            
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            // Hiển thị thêm thông tin về lỗi trong console để debug
+            console.error('Error details:', {
+                message: errorMessage,
+                status: error.status || error.response?.status,
+                data: error.response?.data
+            });
+            
+            alert(`Lỗi: ${errorMessage}`);
         }
+    };
+
+    const handlePasswordChangeComplete = () => {
+        setShowChangePasswordModal(false);
+        navigate('/dashboard');
     };
 
     return (
@@ -55,62 +90,62 @@ const Login: React.FC = () => {
             <div className="max-w-md w-full space-y-8">
                 <div>
                     <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                        {isLogin ? 'Sign in to your account' : 'Create new account'}
+                        {isLogin ? 'Đăng nhập' : 'Tạo tài khoản mới'}
                     </h2>
                 </div>
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                     <div className="rounded-md shadow-sm -space-y-px">
                         {!isLogin && (
                             <div>
-                                <label htmlFor="name" className="sr-only">Full Name</label>
+                                <label htmlFor="name" className="sr-only">Họ tên</label>
                                 <input
                                     id="name"
                                     name="name"
                                     type="text"
                                     required
                                     className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                                    placeholder="Full Name"
+                                    placeholder="Họ tên"
                                     value={formData.name}
                                     onChange={handleChange}
                                 />
                             </div>
                         )}
                         <div>
-                            <label htmlFor="email" className="sr-only">Email address</label>
+                            <label htmlFor="email" className="sr-only">Email</label>
                             <input
                                 id="email"
                                 name="email"
                                 type="email"
                                 required
                                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                                placeholder="Email address"
+                                placeholder="Email"
                                 value={formData.email}
                                 onChange={handleChange}
                             />
                         </div>
                         <div>
-                            <label htmlFor="password" className="sr-only">Password</label>
+                            <label htmlFor="password" className="sr-only">Mật khẩu</label>
                             <input
                                 id="password"
                                 name="password"
                                 type="password"
                                 required
                                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                                placeholder="Password"
+                                placeholder="Mật khẩu"
                                 value={formData.password}
                                 onChange={handleChange}
                             />
                         </div>
                         {!isLogin && (
                             <div>
-                                <label htmlFor="confirmPassword" className="sr-only">Confirm Password</label>
+                                <label htmlFor="confirmPassword" className="sr-only">Xác nhận mật khẩu</label>
                                 <input
                                     id="confirmPassword"
                                     name="confirmPassword"
                                     type="password"
                                     required
                                     className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                                    placeholder="Confirm Password"
+                                    placeholder="Xác nhận mật khẩu"
                                     value={formData.confirmPassword}
                                     onChange={handleChange}
                                 />
@@ -123,7 +158,7 @@ const Login: React.FC = () => {
                             type="submit"
                             className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
-                            {isLogin ? 'Sign in' : 'Sign up'}
+                            {isLogin ? 'Đăng nhập' : 'Đăng ký'}
                         </button>
                     </div>
                 </form>
@@ -133,10 +168,17 @@ const Login: React.FC = () => {
                         onClick={() => setIsLogin(!isLogin)}
                         className="text-blue-600 hover:text-blue-500"
                     >
-                        {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+                        {isLogin ? "Chưa có tài khoản? Đăng ký" : "Đã có tài khoản? Đăng nhập"}
                     </button>
                 </div>
             </div>
+            
+            {/* Change Password Modal */}
+            <ChangePasswordModal 
+                isOpen={showChangePasswordModal}
+                onClose={handlePasswordChangeComplete}
+                isFirstLogin={true}
+            />
         </div>
     );
 };

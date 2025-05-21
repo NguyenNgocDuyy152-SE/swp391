@@ -113,7 +113,7 @@ const Appointment: React.FC = () => {
       
       try {
         // Gọi API đặt lịch tư vấn
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/appointment/schedule`, {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/appointment/schedule`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -24,7 +24,7 @@ const AdminLayout: React.FC = () => {
 
         const fetchAdminProfile = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/admin/profile', {
+                const response = await fetch('http://localhost:5001/api/admin/profile', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${token}`,

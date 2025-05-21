@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from admin_auth import login_admin, admin_required, super_admin_required
 from db_utils import DatabaseManager
+from werkzeug.security import generate_password_hash
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -148,4 +149,113 @@ def change_password():
     if not success:
         return jsonify({"message": "Không thể cập nhật mật khẩu"}), 500
         
-    return jsonify({"message": "Cập nhật mật khẩu thành công"}), 200 
+    return jsonify({"message": "Cập nhật mật khẩu thành công"}), 200
+
+@admin_bp.route('/doctors', methods=['POST'])
+@admin_required
+def add_doctor():
+    """Thêm bác sĩ mới và tạo tài khoản tự động"""
+    data = request.get_json()
+    
+    required_fields = ['name', 'email', 'specialization', 'qualification', 'phone']
+    for field in required_fields:
+        if not data.get(field):
+            return jsonify({"message": f"Thiếu thông tin: {field}"}), 400
+    
+    db = DatabaseManager()
+    
+    # Kiểm tra email đã tồn tại chưa
+    if db.record_exists("users", f"email = '{data['email']}'"):
+        db.disconnect()
+        return jsonify({"message": "Email đã được sử dụng"}), 409
+    
+    try:
+        # Tạo mật khẩu mặc định
+        default_password = "12345678"
+        hashed_password = generate_password_hash(default_password)
+        
+        # Tạo tài khoản người dùng với vai trò bác sĩ
+        user_data = {
+            "name": data['name'],
+            "email": data['email'],
+            "password": hashed_password,
+            "role": "doctor",
+            "password_changed": 0  # Cờ để đánh dấu người dùng cần thay đổi mật khẩu
+        }
+        
+        # Thêm tài khoản user
+        user_id = db.insert_data("users", user_data)
+        if not user_id:
+            db.disconnect()
+            return jsonify({"message": "Không thể tạo tài khoản bác sĩ"}), 500
+            
+        # Thêm thông tin bác sĩ
+        doctor_data = {
+            "user_id": user_id,
+            "specialization": data['specialization'],
+            "qualification": data['qualification'],
+            "phone": data['phone']
+        }
+        
+        if 'bio' in data:
+            doctor_data["bio"] = data['bio']
+            
+        doctor_id = db.insert_data("doctors", doctor_data)
+        if not doctor_id:
+            # Nếu không thêm được thông tin bác sĩ, xóa user đã tạo
+            db.delete_data("users", f"id = {user_id}")
+            db.disconnect()
+            return jsonify({"message": "Không thể tạo thông tin chi tiết bác sĩ"}), 500
+        
+        db.disconnect()
+        return jsonify({
+            "message": "Thêm bác sĩ thành công", 
+            "user_id": user_id,
+            "doctor_id": doctor_id,
+            "default_password": default_password
+        }), 201
+        
+    except Exception as e:
+        db.disconnect()
+        return jsonify({"message": f"Lỗi khi tạo bác sĩ: {str(e)}"}), 500
+
+@admin_bp.route('/doctors', methods=['GET'])
+@admin_required
+def get_doctors():
+    """Lấy danh sách bác sĩ"""
+    db = DatabaseManager()
+    
+    query = """
+    SELECT u.id, u.name, u.email, u.created_at, d.specialization, d.qualification, d.phone, u.password_changed
+    FROM users u
+    JOIN doctors d ON u.id = d.user_id
+    WHERE u.role = 'doctor'
+    """
+    
+    doctors = db.execute_select(query)
+    db.disconnect()
+    
+    return jsonify({"doctors": doctors}), 200
+
+@admin_bp.route('/doctors/<int:doctor_id>', methods=['DELETE'])
+@admin_required
+def delete_doctor(doctor_id):
+    """Xóa bác sĩ"""
+    db = DatabaseManager()
+    
+    # Lấy user_id từ doctor_id
+    doctor = db.fetch_one("SELECT user_id FROM doctors WHERE id = %s", (doctor_id,))
+    if not doctor:
+        db.disconnect()
+        return jsonify({"message": "Không tìm thấy bác sĩ"}), 404
+    
+    user_id = doctor['user_id']
+    
+    # Xóa thông tin bác sĩ
+    db.delete_data("doctors", f"id = {doctor_id}")
+    
+    # Xóa tài khoản người dùng
+    db.delete_data("users", f"id = {user_id}")
+    
+    db.disconnect()
+    return jsonify({"message": "Xóa bác sĩ thành công"}), 200 
