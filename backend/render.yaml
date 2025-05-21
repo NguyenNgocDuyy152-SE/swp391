@@ -6,7 +6,7 @@ services:
     region: singapore
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
-    healthCheckPath: /health
+    healthCheckPath: /api/health
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.1
@@ -23,13 +23,13 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DB_HOST
-        value: localhost
+        sync: false
       - key: DB_USER
-        value: nhatpm
+        sync: false
       - key: DB_PASSWORD
-        value: '#Nhatfw3124'
+        sync: false
       - key: DB_NAME
-        value: swp391
+        sync: false
 
   # Frontend React app
   - type: web
