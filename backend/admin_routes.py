@@ -26,18 +26,34 @@ def login():
 
 @admin_bp.route('/profile', methods=['GET'])
 @admin_required
-def get_profile():
+def get_admin_profile():
     """Lấy thông tin profile của admin đang đăng nhập"""
-    admin_id = request.admin['id']
-    
-    db = DatabaseManager()
-    admin = db.fetch_one("SELECT id, username, role, last_login, created_at FROM admins WHERE id = %s", (admin_id,))
-    db.disconnect()
-    
-    if not admin:
-        return jsonify({"message": "Không tìm thấy thông tin admin"}), 404
-    
-    return jsonify({"admin": admin}), 200
+    try:
+        admin_id = request.admin['id']
+        db = DatabaseManager()
+        admin = db.fetch_one(
+            "SELECT id, username, name, email, role, last_login FROM admins WHERE id = %s",
+            (admin_id,)
+        )
+        
+        if not admin:
+            return jsonify({"message": "Không tìm thấy thông tin admin"}), 404
+            
+        return jsonify({
+            "success": True,
+            "admin": {
+                "id": admin['id'],
+                "username": admin['username'],
+                "name": admin['name'],
+                "email": admin['email'],
+                "role": admin['role'],
+                "last_login": admin['last_login'].isoformat() if admin['last_login'] else None
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error getting admin profile: {str(e)}")
+        return jsonify({"message": f"Lỗi khi lấy thông tin: {str(e)}"}), 500
 
 @admin_bp.route('/users', methods=['GET'])
 @admin_required

@@ -23,25 +23,26 @@ const Navbar: React.FC = () => {
                 <div className="flex justify-between h-16">
                     <div className="flex items-center">
                         <Link to="/" className="flex-shrink-0 flex items-center">
+                            <img src="/logo-chill.svg" alt="Logo" className="h-8 w-8 mr-2" />
                             <span className="text-xl font-bold text-gray-800">Tinh Trùng Chill</span>
                         </Link>
                     </div>
 
                     <div className="flex items-center space-x-4">
-                        <Link to="/" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                            Home
+                        <Link to="/" className="text-gray-600 hover:text-white hover:bg-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+                            Trang chủ
                         </Link>
-                        <Link to="/about" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                            About
+                        <Link to="/about" className="text-gray-600 hover:text-white hover:bg-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+                            Giới thiệu
                         </Link>
-                        <Link to="/services" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                            Services
+                        <Link to="/services" className="text-gray-600 hover:text-white hover:bg-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+                            Dịch vụ
                         </Link>
-                        <Link to="/blog" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                            Blog
+                        <Link to="/blog" className="text-gray-600 hover:text-white hover:bg-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+                            Tin tức
                         </Link>
-                        <Link to="/contact" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                            Contact
+                        <Link to="/contact" className="text-gray-600 hover:text-white hover:bg-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+                            Liên hệ
                         </Link>
 
                         {isLoggedIn ? (
@@ -50,13 +51,13 @@ const Navbar: React.FC = () => {
                                     to="/dashboard"
                                     className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                                 >
-                                    Dashboard
+                                    Quản trị
                                 </Link>
                                 <button
                                     onClick={handleLogout}
                                     className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                                 >
-                                    Logout
+                                    Đăng xuất
                                 </button>
                             </div>
                         ) : (
@@ -64,7 +65,7 @@ const Navbar: React.FC = () => {
                                 to="/login"
                                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                             >
-                                Login
+                                Đăng nhập
                             </Link>
                         )}
                     </div>
