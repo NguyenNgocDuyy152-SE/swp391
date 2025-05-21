@@ -23,6 +23,7 @@ const Navbar: React.FC = () => {
                 <div className="flex justify-between h-16">
                     <div className="flex items-center">
                         <Link to="/" className="flex-shrink-0 flex items-center">
+                            <img src="/logo-chill.svg" alt="Logo" className="h-8 w-8 mr-2" />
                             <span className="text-xl font-bold text-gray-800">Tinh Trùng Chill</span>
                         </Link>
                     </div>
