@@ -29,7 +29,29 @@ const AdminLayout: React.FC = () => {
             const storedRole = localStorage.getItem('adminRole');
             
             if (!token || !storedRole) {
-                navigate('/admin/login');
+                handleLogout();
+                return;
+            }
+
+            // Kiểm tra token format
+            try {
+                const tokenParts = token.split('.');
+                if (tokenParts.length !== 3) {
+                    console.error('Invalid token format');
+                    handleLogout();
+                    return;
+                }
+
+                // Decode token để kiểm tra
+                const payload = JSON.parse(atob(tokenParts[1]));
+                if (!payload.sub || !payload.role) {
+                    console.error('Token missing required fields');
+                    handleLogout();
+                    return;
+                }
+            } catch (error) {
+                console.error('Error decoding token:', error);
+                handleLogout();
                 return;
             }
 
@@ -40,20 +62,9 @@ const AdminLayout: React.FC = () => {
                 return;
             }
 
-            // Initialize with stored data if available
-            if (storedAdminData) {
-                try {
-                    const parsedData = JSON.parse(storedAdminData);
-                    setAdmin(parsedData);
-                } catch (e) {
-                    console.error('Error parsing stored admin data:', e);
-                }
-            }
-
             try {
                 const response = await get<ProfileResponse>('/admin/profile');
                 
-                // Kiểm tra role từ API có khớp với stored role không
                 if (response.admin.role !== storedRole) {
                     console.error('Role mismatch between stored and API data');
                     handleLogout();
@@ -62,8 +73,11 @@ const AdminLayout: React.FC = () => {
                 
                 setAdmin(response.admin);
                 localStorage.setItem('adminData', JSON.stringify(response.admin));
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error fetching profile:', error);
+                if (error.status === 401) {
+                    console.error('Authentication error:', error.response?.data?.message);
+                }
                 handleLogout();
             } finally {
                 setLoading(false);

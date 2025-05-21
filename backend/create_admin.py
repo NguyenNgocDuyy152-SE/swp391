@@ -13,11 +13,13 @@ def create_admin_table():
     db = DatabaseManager()
     db.create_table("admins", """
         id INT AUTO_INCREMENT PRIMARY KEY,
-        username VARCHAR(50) UNIQUE NOT NULL,
+        username VARCHAR(100) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        role VARCHAR(20) DEFAULT 'admin',
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_login TIMESTAMP NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        status ENUM('active', 'inactive') DEFAULT 'active'
     """)
     print("Đã tạo bảng admins")
     return db
@@ -27,7 +29,7 @@ def create_root_admin():
     db = create_admin_table()
     
     # Kiểm tra xem đã có admin root chưa
-    admin = db.fetch_one("SELECT * FROM admins WHERE role = 'super_admin'")
+    admin = db.fetch_one("SELECT * FROM admins WHERE username = 'root_admin'")
     if admin:
         print(f"Admin root đã tồn tại (username: {admin['username']})")
         update = input("Bạn có muốn cập nhật mật khẩu không? (y/n): ")
@@ -36,6 +38,8 @@ def create_root_admin():
     
     # Nhập thông tin admin
     username = input("Nhập tên đăng nhập (mặc định: root_admin): ") or "root_admin"
+    name = input("Nhập tên hiển thị (mặc định: Root Administrator): ") or "Root Administrator"
+    email = input("Nhập email (mặc định: admin@example.com): ") or "admin@example.com"
     
     # Sử dụng getpass để nhập mật khẩu an toàn (không hiển thị khi gõ)
     while True:
@@ -67,12 +71,12 @@ def create_root_admin():
         admin_data = {
             "username": username,
             "password": hashed_password,
-            "role": "super_admin"
+            "name": name,
+            "email": email,
+            "status": "active"
         }
         admin_id = db.insert_data("admins", admin_data)
         print(f"Đã tạo tài khoản admin với ID: {admin_id}")
-    
-    db.disconnect()
 
 if __name__ == "__main__":
     create_root_admin() 

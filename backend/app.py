@@ -15,6 +15,7 @@ from flask_mail import Mail, Message
 from cors_config import configure_cors
 import logging
 from config import APP_CONFIG, DB_CONFIG, EMAIL_CONFIG, validate_production_config
+from argon2 import PasswordHasher
 
 # Configure app logger
 logger = logging.getLogger('app')
@@ -90,6 +91,7 @@ def create_users_table():
         password VARCHAR(255) NOT NULL,
         name VARCHAR(100) NOT NULL,
         email VARCHAR(100) UNIQUE NOT NULL,
+        role ENUM('admin', 'super_admin') DEFAULT 'admin',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_login TIMESTAMP NULL,
         status ENUM('active', 'inactive') DEFAULT 'active'
@@ -99,11 +101,12 @@ def create_users_table():
     # Create default admin account if not exists
     cursor.execute('SELECT * FROM admins WHERE username = "admin"')
     if not cursor.fetchone():
-        hashed_password = generate_password_hash('admin123', method='sha256')
+        ph = PasswordHasher()
+        hashed_password = ph.hash('admin123')
         cursor.execute('''
-        INSERT INTO admins (username, password, name, email) 
-        VALUES (%s, %s, %s, %s)
-        ''', ('admin', hashed_password, 'Administrator', 'admin@example.com'))
+        INSERT INTO admins (username, password, name, email, role) 
+        VALUES (%s, %s, %s, %s, %s)
+        ''', ('admin', hashed_password, 'Administrator', 'admin@example.com', 'super_admin'))
         print("Created default admin account:")
         print("Username: admin")
         print("Password: admin123")

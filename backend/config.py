@@ -59,9 +59,10 @@ DB_CONFIG = {
 
 # Application configuration
 APP_CONFIG = {
-    'SECRET_KEY': os.getenv('SECRET_KEY'),
-    'DEBUG': os.getenv('DEBUG', 'False').lower() in ('true', '1', 't'),
-    'ENVIRONMENT': os.getenv('ENVIRONMENT', 'development'),
+    'DEBUG': os.getenv('FLASK_DEBUG', 'True').lower() in ('true', '1', 't'),
+    'ENVIRONMENT': os.getenv('FLASK_ENV', 'development'),
+    'SECRET_KEY': os.getenv('SECRET_KEY', 'your-super-secret-key-f8e7a6b5c4d3e2f1a9b8c7d6e5f4g3h2i1j0'),
+    'PORT': int(os.getenv('PORT', 5001)),
     'JWT_EXPIRATION_HOURS': int(os.getenv('JWT_EXPIRATION_HOURS', 24)),
 }
 

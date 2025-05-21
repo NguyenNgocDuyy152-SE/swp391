@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Blog from './Blog';
+import { BlogProvider } from '../contexts/BlogContext';
 
 export const Home: React.FC = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -257,7 +258,9 @@ export const Home: React.FC = () => {
             </div>
 
             {/* Blog Section */}
-            <Blog />
+            <BlogProvider>
+                <Blog />
+            </BlogProvider>
 
             {/* Contact Info */}
             <div className="container mx-auto px-4 py-12">

@@ -1,19 +1,17 @@
 from flask import request, jsonify
 from functools import wraps
-from werkzeug.security import check_password_hash
 import jwt
 import datetime
 import os
-from db_utils import DatabaseManager
 from dotenv import load_dotenv
+from admin_utils import AdminManager
 
 # Tải biến môi trường
 load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-123')
 TOKEN_EXPIRE_HOURS = 24  # Token hết hạn sau 24 giờ
 
-def verify_password(stored_hash, provided_password):
-    return check_password_hash(stored_hash, provided_password)
+admin_manager = AdminManager()
 
 def generate_token(user_id, username, role):
     """Tạo JWT token cho admin"""
@@ -22,7 +20,7 @@ def generate_token(user_id, username, role):
         'iat': datetime.datetime.utcnow(),
         'sub': user_id,
         'username': username,
-        'role': role  # Thêm role vào payload
+        'role': role
     }
     return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
 
@@ -32,24 +30,22 @@ def login_admin(username, password):
         return {"success": False, "message": "Vui lòng nhập đầy đủ thông tin"}
         
     try:
-        db = DatabaseManager()
-        admin = db.fetch_one("SELECT * FROM admins WHERE username = %s", (username,))
-        
+        # Get admin details
+        admin = admin_manager.get_admin_by_username(username)
         if not admin:
             return {"success": False, "message": "Tài khoản không tồn tại"}
-        
-        if not verify_password(admin['password'], password):
+            
+        # Verify password
+        if not admin_manager.verify_admin_password(username, password):
             return {"success": False, "message": "Mật khẩu không đúng"}
-        
-        if admin['status'] == 'inactive':
+            
+        if admin.get('status') == 'inactive':
             return {"success": False, "message": "Tài khoản đã bị vô hiệu hóa"}
+            
+        # Update last login time
+        admin_manager.update_last_login(admin['id'])
         
-        # Cập nhật thời gian đăng nhập cuối
-        db.execute_query(
-            "UPDATE admins SET last_login = CURRENT_TIMESTAMP WHERE id = %s",
-            (admin['id'],)
-        )
-        
+        # Generate token
         token = generate_token(admin['id'], admin['username'], admin.get('role', 'admin'))
         
         return {
@@ -61,7 +57,7 @@ def login_admin(username, password):
                 "username": admin['username'],
                 "name": admin['name'],
                 "email": admin['email'],
-                "role": admin.get('role', 'admin')  # Thêm role vào response
+                "role": admin.get('role', 'admin')
             }
         }
     except Exception as e:
@@ -86,20 +82,13 @@ def admin_required(f):
             payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
             admin_id = payload['sub']
             
-            # Kiểm tra admin có tồn tại trong database
-            db = DatabaseManager()
-            admin = db.fetch_one("SELECT * FROM admins WHERE id = %s AND status = 'active'", (admin_id,))
-            
-            if not admin:
+            # Kiểm tra admin có tồn tại và đang active
+            admin = admin_manager.get_admin(admin_id)
+            if not admin or admin.get('status') != 'active':
                 return jsonify({"message": "Token không hợp lệ hoặc tài khoản đã bị vô hiệu hóa"}), 401
                 
             # Thêm thông tin admin vào request
-            request.admin = {
-                "id": admin_id,
-                "username": admin['username'],
-                "name": admin['name'],
-                "email": admin['email']
-            }
+            request.admin = admin
             return f(*args, **kwargs)
             
         except jwt.ExpiredSignatureError:
@@ -131,24 +120,20 @@ def super_admin_required(f):
             if admin_role != 'super_admin':
                 return jsonify({"message": "Không có quyền truy cập"}), 403
                 
-            # Kiểm tra admin có tồn tại trong database
-            db = DatabaseManager()
-            admin = db.fetch_one("SELECT * FROM admins WHERE id = %s AND role = 'super_admin'", (admin_id,))
-            db.disconnect()
-            
-            if not admin:
+            # Kiểm tra admin có tồn tại và là super admin
+            admin = admin_manager.get_admin(admin_id)
+            if not admin or admin.get('role') != 'super_admin':
                 return jsonify({"message": "Token không hợp lệ"}), 401
                 
+            # Thêm thông tin admin vào request
+            request.admin = admin
+            return f(*args, **kwargs)
+            
         except jwt.ExpiredSignatureError:
             return jsonify({"message": "Token đã hết hạn"}), 401
         except Exception as e:
             return jsonify({"message": f"Lỗi xác thực: {str(e)}"}), 401
             
-        # Thêm thông tin admin vào request
-        request.admin = {
-            "id": admin_id,
-            "role": admin_role
-        }
         return f(*args, **kwargs)
         
     return decorated 

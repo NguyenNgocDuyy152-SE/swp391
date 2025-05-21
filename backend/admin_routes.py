@@ -2,8 +2,10 @@ from flask import Blueprint, request, jsonify, make_response
 from admin_auth import login_admin, admin_required, super_admin_required
 from db_utils import DatabaseManager
 from werkzeug.security import generate_password_hash
+from admin_utils import AdminManager
 
 admin_bp = Blueprint('admin', __name__)
+admin_manager = AdminManager()
 
 @admin_bp.route('/login', methods=['POST', 'OPTIONS'])
 def login():
@@ -30,26 +32,12 @@ def get_admin_profile():
     """Lấy thông tin profile của admin đang đăng nhập"""
     try:
         admin_id = request.admin['id']
-        db = DatabaseManager()
-        admin = db.fetch_one(
-            "SELECT id, username, name, email, role, last_login FROM admins WHERE id = %s",
-            (admin_id,)
-        )
+        admin = admin_manager.get_admin(admin_id)
         
         if not admin:
-            return jsonify({"message": "Không tìm thấy thông tin admin"}), 404
+            return jsonify({"message": "Admin not found"}), 404
             
-        return jsonify({
-            "success": True,
-            "admin": {
-                "id": admin['id'],
-                "username": admin['username'],
-                "name": admin['name'],
-                "email": admin['email'],
-                "role": admin['role'],
-                "last_login": admin['last_login'].isoformat() if admin['last_login'] else None
-            }
-        })
+        return jsonify({"admin": admin})
         
     except Exception as e:
         print(f"Error getting admin profile: {str(e)}")
@@ -67,13 +55,10 @@ def get_users():
 
 @admin_bp.route('/admins', methods=['GET'])
 @super_admin_required
-def get_admins():
+def list_admins():
     """Lấy danh sách admin (chỉ super_admin)"""
-    db = DatabaseManager()
-    admins = db.execute_select("SELECT id, username, role, last_login, created_at FROM admins")
-    db.disconnect()
-    
-    return jsonify({"admins": admins}), 200
+    admins = admin_manager.list_admins()
+    return jsonify({"admins": admins})
 
 @admin_bp.route('/admins', methods=['POST'])
 @super_admin_required
@@ -81,8 +66,8 @@ def create_admin():
     """Tạo admin mới (chỉ super_admin)"""
     data = request.get_json()
     
-    if not data or not data.get('username') or not data.get('password') or not data.get('role'):
-        return jsonify({"message": "Thiếu thông tin admin"}), 400
+    if not data or not data.get('username') or not data.get('password') or not data.get('name') or not data.get('email'):
+        return jsonify({"message": "Missing required fields"}), 400
     
     # Kiểm tra username unique
     db = DatabaseManager()
@@ -100,7 +85,9 @@ def create_admin():
     admin_data = {
         "username": data['username'],
         "password": hashed_password,
-        "role": data['role']
+        "name": data['name'],
+        "email": data['email'],
+        "role": data.get('role', 'admin')
     }
     
     admin_id = db.insert_data("admins", admin_data)
@@ -133,13 +120,15 @@ def delete_admin(admin_id):
 
 @admin_bp.route('/change-password', methods=['POST'])
 @admin_required
-def change_password():
+def admin_change_password():
     """Thay đổi mật khẩu của admin đang đăng nhập"""
-    admin_id = request.admin['id']
     data = request.get_json()
+    admin_id = request.admin['id']
+    old_password = data.get('old_password')
+    new_password = data.get('new_password')
     
-    if not data or not data.get('current_password') or not data.get('new_password'):
-        return jsonify({"message": "Thiếu thông tin mật khẩu"}), 400
+    if not all([old_password, new_password]):
+        return jsonify({"message": "Missing required fields"}), 400
     
     db = DatabaseManager()
     admin = db.fetch_one("SELECT password FROM admins WHERE id = %s", (admin_id,))
@@ -153,14 +142,14 @@ def change_password():
     
     ph = PasswordHasher()
     try:
-        ph.verify(admin['password'], data['current_password'])
+        ph.verify(admin['password'], old_password)
     except VerifyMismatchError:
         return jsonify({"message": "Mật khẩu hiện tại không đúng"}), 401
     except Exception:
         return jsonify({"message": "Lỗi xác thực mật khẩu"}), 500
     
     # Mã hóa mật khẩu mới
-    hashed_password = ph.hash(data['new_password'])
+    hashed_password = ph.hash(new_password)
     
     # Cập nhật mật khẩu
     success = db.update_data("admins", {"password": hashed_password}, f"id = {admin_id}")
@@ -311,4 +300,16 @@ def update_doctor_status(user_id):
     if not success:
         return jsonify({"message": "Không thể cập nhật trạng thái bác sĩ"}), 500
         
-    return jsonify({"message": "Cập nhật trạng thái bác sĩ thành công"}), 200 
+    return jsonify({"message": "Cập nhật trạng thái bác sĩ thành công"}), 200
+
+@admin_bp.route('/admins/<int:admin_id>/status', methods=['PUT'])
+@super_admin_required
+def change_admin_status(admin_id):
+    data = request.get_json()
+    new_status = data.get('status')
+    
+    if not new_status or new_status not in ['active', 'inactive']:
+        return jsonify({"message": "Invalid status"}), 400
+        
+    success, message = admin_manager.change_status(admin_id, new_status)
+    return jsonify({"message": message}), 200 if success else 400 
