@@ -32,12 +32,23 @@ export const apiRequest = async <T>(
   };
 
   try {
-    console.log(`API Request: ${method} ${url}`);
+    console.log(`API Request:`, {
+      method,
+      url,
+      headers,
+      data
+    });
+
     const response = await fetch(url, options);
     
     if (!response.ok) {
       // Log chi tiết về response lỗi
-      console.error(`API Error: ${response.status} ${response.statusText}`);
+      console.error(`API Error:`, {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries())
+      });
       
       try {
         const errorData = await response.json();
@@ -52,8 +63,11 @@ export const apiRequest = async <T>(
         throw enhancedError;
       } catch (parseError) {
         console.error('Failed to parse error response:', parseError);
-        const enhancedError: any = new Error(`Request failed with status ${response.status}`);
+        // If we can't parse the error response, throw a more detailed error
+        const enhancedError: any = new Error(`Request failed with status ${response.status} (${response.statusText})`);
         enhancedError.status = response.status;
+        enhancedError.statusText = response.statusText;
+        enhancedError.url = response.url;
         throw enhancedError;
       }
     }
@@ -69,7 +83,12 @@ export const apiRequest = async <T>(
     console.log('API Response: Empty or non-JSON response');
     return {} as T;
   } catch (error) {
-    console.error('API Request Error:', error);
+    console.error('API Request Error:', {
+      error,
+      endpoint,
+      method,
+      data
+    });
     if (error instanceof Error) {
       throw error;
     }

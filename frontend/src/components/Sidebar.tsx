@@ -1,7 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const Sidebar: React.FC = () => {
+    const [userRole, setUserRole] = useState<string>('');
+
+    useEffect(() => {
+        // Get user role from token
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const tokenData = JSON.parse(atob(token.split('.')[1]));
+                setUserRole(tokenData.role || '');
+            } catch (error) {
+                console.error('Error decoding token', error);
+            }
+        }
+    }, []);
+
     const handleLogout = () => {
         localStorage.removeItem('token');
         window.location.href = '/login';
@@ -31,14 +46,16 @@ const Sidebar: React.FC = () => {
                             Lịch hẹn
                         </Link>
                     </li>
-                    <li>
-                        <Link to="/dashboard/treatments" className="flex items-center p-2 rounded hover:bg-gray-700">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Các liệu trình
-                        </Link>
-                    </li>
+                    {userRole !== 'doctor' && (
+                        <li>
+                            <Link to="/dashboard/treatments" className="flex items-center p-2 rounded hover:bg-gray-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Các liệu trình
+                            </Link>
+                        </li>
+                    )}
                     <li>
                         <Link to="/dashboard/profile" className="flex items-center p-2 rounded hover:bg-gray-700">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

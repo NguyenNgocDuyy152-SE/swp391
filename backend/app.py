@@ -1,69 +1,72 @@
+"""
+Main application module for the SWP391 backend API.
+"""
+
+import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import mysql.connector
-from dotenv import load_dotenv
-import os
 import jwt
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
-from admin_routes import admin_bp  # Import blueprint admin
+from admin_routes import admin_bp
 from functools import wraps
 from flask_mail import Mail, Message
+from cors_config import configure_cors
+import logging
+from config import APP_CONFIG, DB_CONFIG, EMAIL_CONFIG, validate_production_config
 
-# Load environment variables
-load_dotenv()
+# Configure app logger
+logger = logging.getLogger('app')
 
 app = Flask(__name__)
-# Configure CORS based on environment
-if os.environ.get('FLASK_ENV') == 'development':
-    # In development, allow all origins
-    CORS(app)
-else:
-    # In production, restrict to specific origins
-    # Get allowed origins from environment variable or default to frontend URL
-    allowed_origins = os.environ.get('ALLOWED_ORIGINS', 'https://swp391-frontend.onrender.com')
-    origins = allowed_origins.split(',')
-    CORS(app, resources={r"/api/*": {"origins": origins}})
 
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-123')
+# Configure CORS
+app = configure_cors(app)
+
+# Configure app settings
+app.config['SECRET_KEY'] = APP_CONFIG['SECRET_KEY']
+app.config['DEBUG'] = APP_CONFIG['DEBUG']
 
 # Email Configuration
-app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME', 'your-email@gmail.com')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD', 'your-app-password')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER', 'TINH TRUNG CHILL <your-email@gmail.com>')
+app.config['MAIL_SERVER'] = EMAIL_CONFIG['MAIL_SERVER']
+app.config['MAIL_PORT'] = EMAIL_CONFIG['MAIL_PORT']
+app.config['MAIL_USE_TLS'] = EMAIL_CONFIG['MAIL_USE_TLS']
+app.config['MAIL_USERNAME'] = EMAIL_CONFIG['MAIL_USERNAME']
+app.config['MAIL_PASSWORD'] = EMAIL_CONFIG['MAIL_PASSWORD']
+app.config['MAIL_DEFAULT_SENDER'] = EMAIL_CONFIG['MAIL_DEFAULT_SENDER']
 
 mail = Mail(app)
 
 # Register admin blueprint
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
-# Database configuration
-db_config = {
-    'host': os.getenv('DB_HOST'),
-    'user': os.getenv('DB_USER'),
-    'password': os.getenv('DB_PASSWORD'),
-    'database': os.getenv('DB_NAME'),
-    'port': int(os.getenv('DB_PORT', 3306))
-}
+# Check if configuration is valid for production
+if APP_CONFIG['ENVIRONMENT'] == 'production':
+    if not validate_production_config():
+        logger.error("Production configuration validation failed! Please check the log for details.")
+        logger.warning("Application is starting with invalid production configuration.")
 
 def get_db_connection():
-    return mysql.connector.connect(**db_config)
+    """Get a database connection from configuration"""
+    try:
+        return mysql.connector.connect(**DB_CONFIG)
+    except mysql.connector.Error as e:
+        logger.error(f"Database connection error: {e}")
+        raise
 
 def create_users_table():
     # Connect to MySQL without specifying database
     conn = mysql.connector.connect(
-        host=db_config['host'],
-        user=db_config['user'],
-        password=db_config['password']
+        host=DB_CONFIG['host'],
+        user=DB_CONFIG['user'],
+        password=DB_CONFIG['password']
     )
     cursor = conn.cursor()
     
     # Create database if it doesn't exist
-    cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_config['database']}")
-    cursor.execute(f"USE {db_config['database']}")
+    cursor.execute(f"CREATE DATABASE IF NOT EXISTS {DB_CONFIG['database']}")
+    cursor.execute(f"USE {DB_CONFIG['database']}")
     
     # Create users table if it doesn't exist
     cursor.execute('''
@@ -73,10 +76,37 @@ def create_users_table():
         email VARCHAR(100) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         role ENUM('admin', 'patient', 'doctor', 'staff') NOT NULL DEFAULT 'patient',
+        status ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         password_changed BOOLEAN DEFAULT TRUE
     )
     ''')
+    
+    # Create admins table if it doesn't exist
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS admins (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(100) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login TIMESTAMP NULL,
+        status ENUM('active', 'inactive') DEFAULT 'active'
+    )
+    ''')
+    
+    # Create default admin account if not exists
+    cursor.execute('SELECT * FROM admins WHERE username = "admin"')
+    if not cursor.fetchone():
+        hashed_password = generate_password_hash('admin123', method='sha256')
+        cursor.execute('''
+        INSERT INTO admins (username, password, name, email) 
+        VALUES (%s, %s, %s, %s)
+        ''', ('admin', hashed_password, 'Administrator', 'admin@example.com'))
+        print("Created default admin account:")
+        print("Username: admin")
+        print("Password: admin123")
     
     # Create doctors table if it doesn't exist  
     cursor.execute('''
@@ -306,10 +336,30 @@ def login():
         cursor = conn.cursor(dictionary=True)
         cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
         user = cursor.fetchone()
-        cursor.close()
-        conn.close()
 
-        if user and check_password_hash(user['password'], password):
+        if not user:
+            cursor.close()
+            conn.close()
+            return jsonify({'message': 'Invalid credentials'}), 401
+            
+        # Kiểm tra nếu user đang đăng nhập là bác sĩ và có trạng thái active hoặc inactive
+        if user['role'] == 'doctor':
+            cursor.execute('SELECT * FROM doctors d JOIN users u ON d.user_id = u.id WHERE u.id = %s', (user['id'],))
+            doctor = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            
+            if not doctor:
+                return jsonify({'message': 'Doctor profile not found'}), 401
+                
+            # Kiểm tra trạng thái của bác sĩ
+            if user.get('status') == 'inactive':
+                return jsonify({'message': 'Your account has been deactivated. Please contact administrator.'}), 401
+        else:
+            cursor.close()
+            conn.close()
+
+        if check_password_hash(user['password'], password):
             # Đảm bảo role luôn tồn tại trong token
             role = user.get('role', 'patient')  # Mặc định là 'patient' nếu không có role
             
@@ -901,9 +951,9 @@ if __name__ == '__main__':
     update_database_structure()
     
     # Only create test doctor in development
-    if os.environ.get('FLASK_ENV') == 'development':
+    if APP_CONFIG['ENVIRONMENT'] == 'development':
         create_test_doctor()
     
     # Get port from environment variable for Render.com or use default 5001
     port = int(os.environ.get('PORT', 5001))
-    app.run(host='0.0.0.0', port=port, debug=os.environ.get('FLASK_ENV') == 'development') 
+    app.run(host='0.0.0.0', port=port, debug=APP_CONFIG['ENVIRONMENT'] == 'development') 

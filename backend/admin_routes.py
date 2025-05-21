@@ -1,13 +1,17 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 from admin_auth import login_admin, admin_required, super_admin_required
 from db_utils import DatabaseManager
 from werkzeug.security import generate_password_hash
 
 admin_bp = Blueprint('admin', __name__)
 
-@admin_bp.route('/login', methods=['POST'])
+@admin_bp.route('/login', methods=['POST', 'OPTIONS'])
 def login():
     """API đăng nhập cho admin"""
+    # OPTIONS requests are already handled by Flask-CORS
+    if request.method == 'OPTIONS':
+        return '', 204
+        
     data = request.get_json()
     
     if not data or not data.get('username') or not data.get('password'):
@@ -180,6 +184,7 @@ def add_doctor():
             "email": data['email'],
             "password": hashed_password,
             "role": "doctor",
+            "status": data.get('status', 'active'),  # Mặc định là active nếu không được cung cấp
             "password_changed": 0  # Cờ để đánh dấu người dùng cần thay đổi mật khẩu
         }
         
@@ -226,7 +231,7 @@ def get_doctors():
     db = DatabaseManager()
     
     query = """
-    SELECT u.id, u.name, u.email, u.created_at, d.specialization, d.qualification, d.phone, u.password_changed
+    SELECT u.id, u.name, u.email, u.created_at, u.status, d.specialization, d.qualification, d.phone, u.password_changed
     FROM users u
     JOIN doctors d ON u.id = d.user_id
     WHERE u.role = 'doctor'
@@ -258,4 +263,36 @@ def delete_doctor(doctor_id):
     db.delete_data("users", f"id = {user_id}")
     
     db.disconnect()
-    return jsonify({"message": "Xóa bác sĩ thành công"}), 200 
+    return jsonify({"message": "Xóa bác sĩ thành công"}), 200
+
+@admin_bp.route('/doctors/<int:user_id>/status', methods=['PUT'])
+@admin_required
+def update_doctor_status(user_id):
+    """Cập nhật trạng thái bác sĩ"""
+    data = request.get_json()
+    
+    if not data or 'status' not in data:
+        return jsonify({"message": "Thiếu thông tin trạng thái"}), 400
+        
+    status = data['status']
+    if status not in ['active', 'inactive']:
+        return jsonify({"message": "Trạng thái không hợp lệ. Chỉ chấp nhận 'active' hoặc 'inactive'"}), 400
+    
+    db = DatabaseManager()
+    
+    # Kiểm tra xem user có tồn tại và có phải là bác sĩ không
+    user = db.fetch_one("SELECT id, role FROM users WHERE id = %s AND role = 'doctor'", (user_id,))
+    
+    if not user:
+        db.disconnect()
+        return jsonify({"message": "Không tìm thấy bác sĩ"}), 404
+    
+    # Cập nhật trạng thái trong bảng users
+    success = db.update_data("users", {"status": status}, f"id = {user_id}")
+    
+    db.disconnect()
+    
+    if not success:
+        return jsonify({"message": "Không thể cập nhật trạng thái bác sĩ"}), 500
+        
+    return jsonify({"message": "Cập nhật trạng thái bác sĩ thành công"}), 200 

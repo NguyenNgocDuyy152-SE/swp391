@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useBlog } from '../contexts/BlogContext';
+
+// Blog data with real images and content
+export const allBlogPosts = [];
 
 const Blog: React.FC = () => {
     // State để xử lý lỗi hình ảnh
@@ -9,6 +13,7 @@ const Blog: React.FC = () => {
     // State để kiểm tra xem đã hiển thị hết bài viết chưa
     const [showLoadMore, setShowLoadMore] = useState(true);
     const navigate = useNavigate();
+    const { posts } = useBlog();
 
     // Chuyển đổi chuỗi ngày sang đối tượng Date
     const parseDate = (dateStr: string) => {
@@ -16,120 +21,8 @@ const Blog: React.FC = () => {
         return new Date(year, month - 1, day);
     };
 
-    // Blog data with real images and content - tăng số lượng bài viết
-    const allBlogPosts = [
-        {
-            id: 1,
-            title: "Tiến bộ mới trong kỹ thuật thụ tinh ống nghiệm",
-            excerpt: "Nghiên cứu mới từ các chuyên gia hàng đầu về phương pháp cải tiến giúp tăng tỷ lệ thành công của IVF...",
-            image: "/images/medical-fallback.jpg",
-            category: "Kỹ thuật mới",
-            author: "BS. Nguyễn Thị Minh",
-            date: "15/05/2024"
-        },
-        {
-            id: 2,
-            title: "Những điều cần biết về sức khỏe sinh sản nam giới",
-            excerpt: "Tìm hiểu các yếu tố ảnh hưởng đến chất lượng tinh trùng và biện pháp cải thiện khả năng sinh sản...",
-            image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1964&auto=format&fit=crop",
-            category: "Sức khỏe",
-            author: "BS. Trần Văn Nam",
-            date: "08/05/2024"
-        },
-        {
-            id: 3,
-            title: "Hội thảo về sức khỏe sinh sản cho phụ nữ trẻ",
-            excerpt: "Trung tâm Y tế tổ chức hội thảo cung cấp kiến thức về sức khỏe sinh sản dành cho phụ nữ độ tuổi 20-35...",
-            image: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=1780&auto=format&fit=crop",
-            category: "Hoạt động",
-            author: "ThS. Lê Thị Hồng",
-            date: "29/04/2024"
-        },
-        {
-            id: 4,
-            title: "Ảnh hưởng của dinh dưỡng đến khả năng sinh sản",
-            excerpt: "Chế độ ăn uống đóng vai trò quan trọng trong việc cải thiện khả năng sinh sản của cả nam và nữ...",
-            image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?q=80&w=2070&auto=format&fit=crop",
-            category: "Sức khỏe",
-            author: "CN. Dinh dưỡng Phạm Thu Hà",
-            date: "20/04/2024"
-        },
-        {
-            id: 5,
-            title: "Khai trương phòng khám sức khỏe sinh sản số 2",
-            excerpt: "Trung tâm Y tế Tinh Trùng Chill khai trương cơ sở mới tại quận 7, TP.HCM với nhiều trang thiết bị hiện đại...",
-            image: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?q=80&w=2073&auto=format&fit=crop",
-            category: "Thông báo",
-            author: "Ban Truyền thông",
-            date: "15/04/2024"
-        },
-        {
-            id: 6,
-            title: "Ứng dụng trí tuệ nhân tạo trong điều trị vô sinh",
-            excerpt: "Công nghệ AI đang giúp các bác sĩ chẩn đoán và lựa chọn phương pháp điều trị hiệu quả hơn cho từng bệnh nhân...",
-            image: "https://images.unsplash.com/photo-1581093588401-fbb62a02f120?q=80&w=2070&auto=format&fit=crop",
-            category: "Kỹ thuật mới",
-            author: "TS. Hoàng Minh Tuấn",
-            date: "10/04/2024"
-        },
-        {
-            id: 7,
-            title: "Vai trò của hormone trong điều trị vô sinh nữ",
-            excerpt: "Tìm hiểu về các loại hormone quan trọng và tác động của chúng đến khả năng sinh sản của nữ giới...",
-            image: "https://images.unsplash.com/photo-1584982751601-97dcc096659c?q=80&w=2072&auto=format&fit=crop",
-            category: "Sức khỏe",
-            author: "BS. Nguyễn Thị Hương",
-            date: "05/04/2024"
-        },
-        {
-            id: 8,
-            title: "Giải pháp điều trị bất thường tinh trùng",
-            excerpt: "Các phương pháp hiện đại giúp cải thiện chất lượng tinh trùng và tăng khả năng thụ thai tự nhiên...",
-            image: "https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?q=80&w=2070&auto=format&fit=crop",
-            category: "Kỹ thuật mới",
-            author: "BS. Lê Văn Thành",
-            date: "28/03/2024"
-        },
-        {
-            id: 9,
-            title: "Kỹ thuật nuôi cấy trứng mới nhất",
-            excerpt: "Phương pháp nuôi cấy trứng cải tiến giúp nâng cao tỷ lệ thành công trong điều trị IVF...",
-            image: "https://images.unsplash.com/photo-1579165466741-7f35e4755183?q=80&w=1887&auto=format&fit=crop",
-            category: "Kỹ thuật mới",
-            author: "PGS.TS Trần Văn Chính",
-            date: "20/03/2024"
-        },
-        {
-            id: 10,
-            title: "Hiểu đúng về lão hóa trứng ở phụ nữ",
-            excerpt: "Những thông tin quan trọng về quá trình lão hóa trứng và các biện pháp phòng ngừa...",
-            image: "https://images.unsplash.com/photo-1527613426441-4da17471b66d?q=80&w=2070&auto=format&fit=crop",
-            category: "Sức khỏe",
-            author: "BS. Hoàng Thị Mai",
-            date: "15/03/2024"
-        },
-        {
-            id: 11,
-            title: "Phác đồ điều trị vô sinh hiệu quả năm 2024",
-            excerpt: "Cập nhật các phác đồ điều trị vô sinh mới nhất được áp dụng tại các trung tâm hỗ trợ sinh sản hàng đầu...",
-            image: "https://images.unsplash.com/photo-1631815588090-d4bfec5b7e85?q=80&w=1972&auto=format&fit=crop",
-            category: "Kỹ thuật mới",
-            author: "GS.TS Nguyễn Văn Bình",
-            date: "10/03/2024"
-        },
-        {
-            id: 12,
-            title: "Ảnh hưởng của môi trường đến chất lượng tinh trùng",
-            excerpt: "Môi trường sống, chế độ sinh hoạt và các yếu tố môi trường có thể tác động mạnh đến sức khỏe sinh sản nam giới...",
-            image: "https://images.unsplash.com/photo-1523978591478-c753949ff840?q=80&w=2071&auto=format&fit=crop",
-            category: "Sức khỏe",
-            author: "BS. Đặng Minh Hùng",
-            date: "05/03/2024"
-        }
-    ];
-
     // Sắp xếp bài viết theo thời gian giảm dần (bài mới nhất lên đầu)
-    const sortedBlogPosts = [...allBlogPosts].sort((a, b) => {
+    const sortedBlogPosts = [...posts].sort((a, b) => {
         const dateA = parseDate(a.date);
         const dateB = parseDate(b.date);
         return dateB.getTime() - dateA.getTime();
@@ -139,9 +32,9 @@ const Blog: React.FC = () => {
     const blogPosts = sortedBlogPosts.slice(0, visiblePosts);
 
     // Featured blog post (most recent)
-    const featuredPost = {
-        title: "Phương pháp mới trong điều trị vô sinh hiếm muộn",
-        excerpt: "Tiến bộ y học mới nhất trong lĩnh vực sinh sản hỗ trợ mang lại hy vọng cho những cặp vợ chồng khó có con. Các kỹ thuật điều trị tiên tiến đã giúp tăng tỷ lệ thành công lên đáng kể, đặc biệt ở những trường hợp khó.",
+    const featuredPost = sortedBlogPosts[0] || {
+        title: "Chưa có bài viết nào",
+        excerpt: "Hiện tại chưa có bài viết nào trong hệ thống.",
         image: "/images/medical-fallback.jpg"
     };
 
@@ -154,7 +47,7 @@ const Blog: React.FC = () => {
         setVisiblePosts(newVisiblePosts);
 
         // Nếu đã hiển thị tất cả bài viết, ẩn nút "Xem thêm"
-        if (newVisiblePosts >= allBlogPosts.length) {
+        if (newVisiblePosts >= posts.length) {
             setShowLoadMore(false);
         }
     };

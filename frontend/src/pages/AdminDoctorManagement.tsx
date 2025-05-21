@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { get, post, del } from '../services/apiClient';
+import { get, post, put, del } from '../services/apiClient';
 
 interface Doctor {
     id: number;
@@ -148,6 +148,35 @@ const AdminDoctorManagement: React.FC = () => {
         }
     };
 
+    const handleStatusChange = async (doctorId: number, newStatus: 'active' | 'inactive') => {
+        try {
+            console.log('Updating status for doctor:', doctorId, 'to:', newStatus);
+            
+            // Call the API to update the doctor's status
+            const response = await put(`/admin/doctors/${doctorId}/status`, { status: newStatus });
+            console.log('Update status response:', response);
+            
+            // After successful API call, fetch the updated list
+            await fetchDoctors();
+            
+            // Show success message
+            alert(newStatus === 'active' 
+                ? "Bác sĩ đã được kích hoạt thành công" 
+                : "Bác sĩ đã được ngừng hoạt động");
+                
+        } catch (err: any) {
+            console.error("Failed to update doctor status:", err);
+            console.error("Error details:", {
+                message: err.message,
+                status: err.status,
+                response: err.response
+            });
+            alert("Không thể cập nhật trạng thái bác sĩ: " + (err.message || "Đã xảy ra lỗi"));
+            // Refresh the list to ensure UI shows correct state
+            await fetchDoctors();
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
@@ -276,16 +305,7 @@ const AdminDoctorManagement: React.FC = () => {
                                     <tr key={doctor.id}>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
-                                                <div className="flex-shrink-0 h-10 w-10">
-                                                    <img 
-                                                        className="h-10 w-10 rounded-full" 
-                                                        src={doctor.image_url || 'https://via.placeholder.com/150'} 
-                                                        alt={doctor.name} 
-                                                    />
-                                                </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">{doctor.name}</div>
-                                                </div>
+                                                <div className="text-sm font-medium text-gray-900">{doctor.name}</div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
@@ -296,11 +316,21 @@ const AdminDoctorManagement: React.FC = () => {
                                             <div className="text-sm text-gray-500">{doctor.phone}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                                doctor.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                            }`}>
-                                                {doctor.status === 'active' ? 'Đang hoạt động' : 'Ngừng hoạt động'}
-                                            </span>
+                                            <select
+                                                value={doctor.status}
+                                                onChange={(e) => handleStatusChange(doctor.id, e.target.value as 'active' | 'inactive')}
+                                                className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                                    doctor.status === 'active' 
+                                                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                                                        : 'bg-red-100 text-red-800 hover:bg-red-200'
+                                                }`}
+                                            >
+                                                <option value="active">Đang hoạt động</option>
+                                                <option value="inactive">Ngừng hoạt động</option>
+                                            </select>
+                                            {doctor.status === 'inactive' && (
+                                                <p className="mt-1 text-xs text-red-500">Không thể đăng nhập</p>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             <button
@@ -434,6 +464,7 @@ const AdminDoctorManagement: React.FC = () => {
                                         <option value="active">Đang hoạt động</option>
                                         <option value="inactive">Ngừng hoạt động</option>
                                     </select>
+                                    <p className="mt-1 text-xs text-gray-500">Chỉ bác sĩ có trạng thái "Đang hoạt động" mới có thể đăng nhập vào hệ thống.</p>
                                 </div>
                                 </div>
                                 

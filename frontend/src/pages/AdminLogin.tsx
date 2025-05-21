@@ -2,6 +2,19 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { post } from '../services/apiClient';
 
+interface LoginResponse {
+    success: boolean;
+    message: string;
+    token: string;
+    admin: {
+        id: number;
+        username: string;
+        name: string;
+        email: string;
+        role: string;
+    };
+}
+
 const AdminLogin: React.FC = () => {
     const [formData, setFormData] = useState({
         username: '',
@@ -26,11 +39,23 @@ const AdminLogin: React.FC = () => {
         setError(null);
 
         try {
-            const data = await post<{ token: string; admin: { role: string } }>('/admin/login', formData, false);
+            const response = await post<LoginResponse>('/admin/login', formData, false);
             
-            localStorage.setItem('adminToken', data.token);
-            localStorage.setItem('adminRole', data.admin.role);
-            navigate('/admin/dashboard');
+            if (response.success) {
+                // Lưu token và thông tin admin
+                localStorage.setItem('adminToken', response.token);
+                localStorage.setItem('adminData', JSON.stringify(response.admin));
+                localStorage.setItem('adminRole', response.admin.role); // Lưu role riêng để dễ truy cập
+                
+                // Chuyển hướng dựa vào role
+                if (response.admin.role === 'super_admin') {
+                    navigate('/admin/super-dashboard');
+                } else {
+                    navigate('/admin/dashboard');
+                }
+            } else {
+                setError(response.message || 'Đăng nhập thất bại');
+            }
         } catch (error: any) {
             console.error('Error:', error);
             let errorMessage = 'Đã xảy ra lỗi. Vui lòng thử lại.';

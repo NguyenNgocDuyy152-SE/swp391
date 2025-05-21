@@ -1,140 +1,242 @@
 import mysql.connector
-from mysql.connector import Error
+from mysql.connector import Error, pooling
 from dotenv import load_dotenv
 import os
+import logging
+import time
 
-# Tải biến môi trường từ file .env
+# Load environment variables from .env file
 load_dotenv()
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger('db_utils')
+
 class DatabaseManager:
+    _instance = None
+    _pool = None
+    
+    def __new__(cls):
+        """Implement singleton pattern for DatabaseManager"""
+        if cls._instance is None:
+            cls._instance = super(DatabaseManager, cls).__new__(cls)
+            # Move initialization to __init__
+        return cls._instance
+    
     def __init__(self):
-        """Khởi tạo đối tượng DatabaseManager với thông tin kết nối từ biến môi trường"""
-        self.config = {
-            'host': os.getenv('DB_HOST', 'localhost'),
-            'user': os.getenv('DB_USER', 'root'),
-            'password': os.getenv('DB_PASSWORD', ''),
-            'database': os.getenv('DB_NAME', 'swp391')
-        }
-        self.connection = None
+        """Initialize DatabaseManager with connection info from environment variables"""
+        if not hasattr(self, 'config'):  # Only initialize if not already initialized
+            self.config = {
+                'host': os.getenv('DB_HOST', 'localhost'),
+                'user': os.getenv('DB_USER', 'root'),
+                'password': os.getenv('DB_PASSWORD'),
+                'database': os.getenv('DB_NAME', 'swp391'),
+                'port': int(os.getenv('DB_PORT', 3306)),
+                'connection_timeout': 30,
+                'autocommit': True,
+                'charset': 'utf8mb4',
+                'use_pure': True,  # Use pure Python implementation
+            }
+            
+            # Validate required configurations
+            if not self.config['password']:
+                logger.error("DB_PASSWORD environment variable is not set")
+                raise ValueError("Database password not configured")
+                
+            # Initialize pool after config is set
+            self._init_pool()
 
-    def connect(self):
-        """Tạo kết nối đến MySQL database"""
+    def _init_pool(self):
+        """Initialize connection pool for better performance"""
         try:
-            if self.connection is None or not self.connection.is_connected():
-                self.connection = mysql.connector.connect(**self.config)
-                print("Kết nối MySQL database thành công!")
-            return self.connection
+            if not hasattr(self, '_pool') or self._pool is None:  # Only initialize if not already initialized
+                self._pool = pooling.MySQLConnectionPool(
+                    pool_name="db_pool",
+                    pool_size=5,
+                    pool_reset_session=True,
+                    **self.config
+                )
+                logger.info("Database connection pool initialized successfully")
         except Error as e:
-            print(f"Lỗi kết nối đến MySQL: {e}")
-            return None
+            logger.error(f"Error initializing connection pool: {e}")
+            raise
 
-    def disconnect(self):
-        """Đóng kết nối đến database"""
-        if self.connection and self.connection.is_connected():
-            self.connection.close()
-            print("Đã đóng kết nối MySQL")
+    def get_connection(self):
+        """Get a connection from the pool with retry logic"""
+        max_retries = 3
+        retry_delay = 1  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                if self._pool:
+                    connection = self._pool.get_connection()
+                    if connection.is_connected():
+                        return connection
+            except Error as e:
+                logger.warning(f"Failed to get connection (attempt {attempt+1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+                else:
+                    logger.error(f"Failed to connect to database after {max_retries} attempts")
+                    raise
+        
+        logger.error("Could not establish database connection")
+        raise ConnectionError("Failed to connect to database")
+
+    def release_connection(self, connection):
+        """Return connection to the pool"""
+        if connection and connection.is_connected():
+            connection.close()
 
     def execute_query(self, query, params=None):
         """
-        Thực thi truy vấn SQL không trả về kết quả (INSERT, UPDATE, DELETE)
+        Execute a non-SELECT SQL query (INSERT, UPDATE, DELETE)
         
         Args:
-            query (str): Câu truy vấn SQL
-            params (tuple, optional): Tham số cho câu truy vấn SQL
+            query (str): SQL query string
+            params (tuple|dict, optional): Parameters for the SQL query
             
         Returns:
-            bool: True nếu thành công, False nếu thất bại
+            int|bool: Last inserted ID (for INSERT) or True if successful, False if failed
+            
+        Raises:
+            Error: On database errors
         """
+        connection = None
         try:
-            connection = self.connect()
-            if connection:
-                cursor = connection.cursor()
-                if params:
-                    cursor.execute(query, params)
-                else:
-                    cursor.execute(query)
-                connection.commit()
-                print("Thực thi truy vấn thành công")
-                last_id = cursor.lastrowid  # Lấy ID của bản ghi vừa chèn (nếu là INSERT)
-                cursor.close()
-                return last_id if last_id else True
-            return False
+            connection = self.get_connection()
+            cursor = connection.cursor()
+            
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+                
+            connection.commit()
+            last_id = cursor.lastrowid
+            affected_rows = cursor.rowcount
+            
+            cursor.close()
+            logger.debug(f"Query executed successfully. Affected rows: {affected_rows}")
+            return last_id if last_id else True
+            
         except Error as e:
-            print(f"Lỗi thực thi truy vấn: {e}")
-            return False
+            if connection:
+                connection.rollback()
+            logger.error(f"Database error executing query: {e}")
+            raise
+        finally:
+            if connection:
+                self.release_connection(connection)
 
     def execute_select(self, query, params=None, dictionary=True):
         """
-        Thực thi truy vấn SQL trả về kết quả (SELECT)
+        Execute a SELECT SQL query and return results
         
         Args:
-            query (str): Câu truy vấn SQL
-            params (tuple, optional): Tham số cho câu truy vấn SQL
-            dictionary (bool): Trả về kết quả dưới dạng dictionary nếu True
+            query (str): SQL query string
+            params (tuple|dict, optional): Parameters for the SQL query
+            dictionary (bool): Return results as dictionaries if True, tuples if False
             
         Returns:
-            list: Danh sách các bản ghi (dạng dictionary hoặc tuple)
-        """
-        try:
-            connection = self.connect()
-            if connection:
-                cursor = connection.cursor(dictionary=dictionary)
-                if params:
-                    cursor.execute(query, params)
-                else:
-                    cursor.execute(query)
-                result = cursor.fetchall()
-                cursor.close()
-                return result
-            return None
-        except Error as e:
-            print(f"Lỗi thực thi truy vấn SELECT: {e}")
-            return None
+            list: List of records (as dictionaries or tuples)
             
-    def fetch_one(self, query, params=None, dictionary=True):
-        """Trả về một bản ghi đầu tiên từ kết quả truy vấn"""
+        Raises:
+            Error: On database errors
+        """
+        connection = None
         try:
-            connection = self.connect()
-            if connection:
-                cursor = connection.cursor(dictionary=dictionary)
-                if params:
-                    cursor.execute(query, params)
-                else:
-                    cursor.execute(query)
-                result = cursor.fetchone()
-                cursor.close()
-                return result
-            return None
+            connection = self.get_connection()
+            cursor = connection.cursor(dictionary=dictionary)
+            
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+                
+            result = cursor.fetchall()
+            cursor.close()
+            return result
+            
         except Error as e:
-            print(f"Lỗi thực thi truy vấn fetch_one: {e}")
-            return None
+            logger.error(f"Database error executing SELECT query: {e}")
+            raise
+        finally:
+            if connection:
+                self.release_connection(connection)
+                
+    def fetch_one(self, query, params=None, dictionary=True):
+        """
+        Execute a SELECT SQL query and return the first record
+        
+        Args:
+            query (str): SQL query string
+            params (tuple|dict, optional): Parameters for the SQL query
+            dictionary (bool): Return result as dictionary if True, tuple if False
+            
+        Returns:
+            dict|tuple|None: First record or None if no results
+            
+        Raises:
+            Error: On database errors
+        """
+        connection = None
+        try:
+            connection = self.get_connection()
+            cursor = connection.cursor(dictionary=dictionary)
+            
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+                
+            result = cursor.fetchone()
+            cursor.close()
+            return result
+            
+        except Error as e:
+            logger.error(f"Database error executing fetch_one query: {e}")
+            raise
+        finally:
+            if connection:
+                self.release_connection(connection)
 
-    # Các hàm tiện ích
+    # Utility methods
 
     def create_table(self, table_name, columns_definition):
         """
-        Tạo bảng mới trong database
+        Create a new table in the database if it doesn't exist
         
         Args:
-            table_name (str): Tên bảng
-            columns_definition (str): Định nghĩa các cột
+            table_name (str): Table name
+            columns_definition (str): Column definitions
             
         Returns:
-            bool: True nếu thành công, False nếu thất bại
+            bool: True if successful
+            
+        Raises:
+            Error: On database errors
         """
         query = f"CREATE TABLE IF NOT EXISTS {table_name} ({columns_definition})"
         return self.execute_query(query)
 
     def insert_data(self, table, data):
         """
-        Chèn dữ liệu vào bảng
+        Insert data into a table
         
         Args:
-            table (str): Tên bảng
-            data (dict): Dữ liệu cần chèn (dạng {"column": value})
+            table (str): Table name
+            data (dict): Data to insert as {"column": value}
             
         Returns:
-            int/bool: ID bản ghi vừa chèn nếu thành công, False nếu thất bại
+            int|bool: Last inserted ID if successful
+            
+        Raises:
+            Error: On database errors
         """
         columns = ', '.join(data.keys())
         placeholders = ', '.join(['%s'] * len(data))
@@ -142,50 +244,70 @@ class DatabaseManager:
         params = tuple(data.values())
         return self.execute_query(query, params)
 
-    def update_data(self, table, data, condition):
+    def update_data(self, table, data, condition, condition_params=None):
         """
-        Cập nhật dữ liệu trong bảng
+        Update data in a table
         
         Args:
-            table (str): Tên bảng
-            data (dict): Dữ liệu cần cập nhật (dạng {"column": value})
-            condition (str): Điều kiện cập nhật (vd: "id = 1")
+            table (str): Table name
+            data (dict): Data to update as {"column": value}
+            condition (str): WHERE condition with %s placeholders
+            condition_params (tuple): Parameters for condition
             
         Returns:
-            bool: True nếu thành công, False nếu thất bại
+            bool: True if successful
+            
+        Raises:
+            Error: On database errors
         """
         set_clause = ', '.join([f"{k} = %s" for k in data.keys()])
         query = f"UPDATE {table} SET {set_clause} WHERE {condition}"
+        
+        # Combine data values and condition parameters
         params = tuple(data.values())
+        if condition_params:
+            if isinstance(condition_params, tuple):
+                params = params + condition_params
+            else:
+                params = params + (condition_params,)
+                
         return self.execute_query(query, params)
 
-    def delete_data(self, table, condition):
+    def delete_data(self, table, condition, params=None):
         """
-        Xóa dữ liệu từ bảng
+        Delete data from a table
         
         Args:
-            table (str): Tên bảng
-            condition (str): Điều kiện xóa (vd: "id = 1")
+            table (str): Table name
+            condition (str): WHERE condition with %s placeholders
+            params (tuple): Parameters for condition
             
         Returns:
-            bool: True nếu thành công, False nếu thất bại
+            bool: True if successful
+            
+        Raises:
+            Error: On database errors
         """
         query = f"DELETE FROM {table} WHERE {condition}"
-        return self.execute_query(query)
+        return self.execute_query(query, params)
 
-    def record_exists(self, table, condition):
+    def record_exists(self, table, condition, params=None):
         """
-        Kiểm tra xem bản ghi có tồn tại không
+        Check if a record exists
         
         Args:
-            table (str): Tên bảng
-            condition (str): Điều kiện kiểm tra (vd: "email = 'user@example.com'")
+            table (str): Table name
+            condition (str): WHERE condition with %s placeholders
+            params (tuple): Parameters for condition
             
         Returns:
-            bool: True nếu tồn tại, False nếu không
+            bool: True if record exists
+            
+        Raises:
+            Error: On database errors
         """
         query = f"SELECT 1 FROM {table} WHERE {condition} LIMIT 1"
-        result = self.fetch_one(query)
+        result = self.fetch_one(query, params)
         return result is not None
 
     def backup_database(self, backup_path):
@@ -255,4 +377,4 @@ if __name__ == "__main__":
     print("Danh sách người dùng:", users)
     
     # Đóng kết nối
-    db.disconnect() 
+    db.release_connection(db.get_connection()) 
