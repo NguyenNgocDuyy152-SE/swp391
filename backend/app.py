@@ -14,7 +14,17 @@ from flask_mail import Mail, Message
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+# Configure CORS based on environment
+if os.environ.get('FLASK_ENV') == 'development':
+    # In development, allow all origins
+    CORS(app)
+else:
+    # In production, restrict to specific origins
+    # Get allowed origins from environment variable or default to frontend URL
+    allowed_origins = os.environ.get('ALLOWED_ORIGINS', 'https://swp391-frontend.onrender.com')
+    origins = allowed_origins.split(',')
+    CORS(app, resources={r"/api/*": {"origins": origins}})
+
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-123')
 
 # Email Configuration
@@ -32,9 +42,9 @@ app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
 # Database configuration
 db_config = {
-    'host': os.getenv('DB_HOST', '127.0.0.1'),  # Địa chỉ IP của máy bạn bạn
-    'user': os.getenv('DB_USER', 'remote_user'),
-    'password': os.getenv('DB_PASSWORD', '#Nhatfw3124'),
+    'host': os.getenv('DB_HOST', '127.0.0.1'),
+    'user': os.getenv('DB_USER', 'db_user'),
+    'password': os.getenv('DB_PASSWORD', 'db_password'),
     'database': os.getenv('DB_NAME', 'swp391')
 }
 
@@ -884,5 +894,11 @@ if __name__ == '__main__':
     create_consultation_requests_table()
     create_doctors_table()
     update_database_structure()
-    create_test_doctor()
-    app.run(debug=True, port=5001) 
+    
+    # Only create test doctor in development
+    if os.environ.get('FLASK_ENV') == 'development':
+        create_test_doctor()
+    
+    # Get port from environment variable for Render.com or use default 5001
+    port = int(os.environ.get('PORT', 5001))
+    app.run(host='0.0.0.0', port=port, debug=os.environ.get('FLASK_ENV') == 'development') 

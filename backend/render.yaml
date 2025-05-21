@@ -1,0 +1,46 @@
+services:
+  # Backend API service
+  - type: web
+    name: swp391-api
+    env: python
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.1
+      - key: MAIL_SERVER
+        sync: false
+      - key: MAIL_PORT
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_DEFAULT_SENDER
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+
+  # Frontend React app
+  - type: web
+    name: swp391-frontend
+    env: static
+    region: singapore
+    buildCommand: cd ../frontend && npm install && npm run build
+    staticPublishPath: ../frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        fromService:
+          name: swp391-api
+          type: web
+          property: url 
