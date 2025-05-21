@@ -9,6 +9,7 @@ import Blog from './components/Blog';
 import Services from './components/Services';
 import Contact from './components/Contact';
 import Appointment from './pages/Appointment';
+import BlogPost from './pages/BlogPost';
 
 function App() {
   return (
@@ -203,11 +204,12 @@ function App() {
           </div>
         } />
         <Route path="/blog" element={
-          <div className="min-h-screen bg-gray-50">
+          <div>
             <Navbar />
             <Blog />
           </div>
         } />
+        <Route path="/blog/:id" element={<BlogPost />} />
         <Route path="/services" element={
           <div className="min-h-screen bg-gray-50">
             <Navbar />

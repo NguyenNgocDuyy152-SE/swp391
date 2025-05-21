@@ -32,8 +32,8 @@ app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
 # Database configuration
 db_config = {
-    'host': os.getenv('DB_HOST', '42.119.81.206'),  # Địa chỉ IP của máy bạn bạn
-    'user': os.getenv('DB_USER', 'root'),
+    'host': os.getenv('DB_HOST', '127.0.0.1'),  # Địa chỉ IP của máy bạn bạn
+    'user': os.getenv('DB_USER', 'remote_user'),
     'password': os.getenv('DB_PASSWORD', '#Nhatfw3124'),
     'database': os.getenv('DB_NAME', 'swp391')
 }
