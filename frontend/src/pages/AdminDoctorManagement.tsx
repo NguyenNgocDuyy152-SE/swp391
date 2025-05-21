@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { get, post, del } from '../services/apiClient';
 
 interface Doctor {
     id: number;
@@ -7,74 +8,87 @@ interface Doctor {
     email: string;
     phone: string;
     specialization: string; // chuyên khoa
+    qualification?: string;
     status: 'active' | 'inactive';
     image_url?: string;
+}
+
+interface DoctorFormData {
+    name: string;
+    email: string;
+    phone: string;
+    specialization: string;
+    qualification: string;
+    status: 'active' | 'inactive';
 }
 
 const AdminDoctorManagement: React.FC = () => {
     const [doctors, setDoctors] = useState<Doctor[]>([]);
     const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
     const [loading, setLoading] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddForm, setShowAddForm] = useState(false);
     const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<DoctorFormData>({
         name: '',
         email: '',
         phone: '',
         specialization: '',
+        qualification: '',
         status: 'active',
     });
 
     const navigate = useNavigate();
 
     // Fetch doctors data
-    useEffect(() => {
-        // For now, use mock data. In real implementation, fetch from API
-        const mockDoctors: Doctor[] = [
-            {
-                id: 1,
-                name: 'Bs. Nguyễn Văn A',
-                email: 'nguyenvana@example.com',
-                specialization: 'Hiếm muộn nam',
-                phone: '0901234567',
-                image_url: 'https://randomuser.me/api/portraits/men/1.jpg',
-                status: 'active'
-            },
-            {
-                id: 2,
-                name: 'Bs. Trần Thị B',
-                email: 'tranthib@example.com',
-                specialization: 'Hiếm muộn nữ',
-                phone: '0901234568',
-                image_url: 'https://randomuser.me/api/portraits/women/2.jpg',
-                status: 'active'
-            },
-            {
-                id: 3,
-                name: 'Bs. Phạm Văn C',
-                email: 'phamvanc@example.com',
-                specialization: 'Nội tiết',
-                phone: '0901234569',
-                image_url: 'https://randomuser.me/api/portraits/men/3.jpg',
-                status: 'inactive'
-            },
-            {
-                id: 4,
-                name: 'Bs. Lê Thị D',
-                email: 'lethid@example.com',
-                specialization: 'Hỗ trợ sinh sản',
-                phone: '0901234570',
-                image_url: 'https://randomuser.me/api/portraits/women/4.jpg',
-                status: 'active'
+    const fetchDoctors = async () => {
+        setLoading(true);
+        try {
+            const response = await get<{ doctors: Doctor[] }>('/admin/doctors');
+            if (response && response.doctors) {
+                setDoctors(response.doctors);
+                setFilteredDoctors(response.doctors);
+            } else {
+                // Fallback to mock data for testing
+                const mockDoctors: Doctor[] = [
+                    {
+                        id: 1,
+                        name: 'Bs. Nguyễn Văn A',
+                        email: 'nguyenvana@example.com',
+                        specialization: 'Hiếm muộn nam',
+                        qualification: 'MD',
+                        phone: '0901234567',
+                        image_url: 'https://randomuser.me/api/portraits/men/1.jpg',
+                        status: 'active'
+                    },
+                    {
+                        id: 2,
+                        name: 'Bs. Trần Thị B',
+                        email: 'tranthib@example.com',
+                        specialization: 'Hiếm muộn nữ',
+                        qualification: 'PhD',
+                        phone: '0901234568',
+                        image_url: 'https://randomuser.me/api/portraits/women/2.jpg',
+                        status: 'active'
+                    }
+                ];
+                
+                setDoctors(mockDoctors);
+                setFilteredDoctors(mockDoctors);
+                console.warn("Loading mock doctor data. In production, API should return actual data.");
             }
-        ];
+        } catch (err) {
+            console.error("Failed to fetch doctors:", err);
+            setError("Không thể tải danh sách bác sĩ. Vui lòng thử lại sau.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        setDoctors(mockDoctors);
-        setFilteredDoctors(mockDoctors);
-        setLoading(false);
-
-        // In real implementation, fetch data from server
+    useEffect(() => {
+        fetchDoctors();
     }, []);
 
     // Handle search and filtering
@@ -100,6 +114,7 @@ const AdminDoctorManagement: React.FC = () => {
             ...prev,
             [name]: value
         }));
+        setError(null);
     };
 
     const handleEdit = (doctor: Doctor) => {
@@ -107,64 +122,92 @@ const AdminDoctorManagement: React.FC = () => {
         setFormData({
             name: doctor.name,
             email: doctor.email,
-            phone: doctor.phone,
+            phone: doctor.phone || '',
             specialization: doctor.specialization,
+            qualification: doctor.qualification || '',
             status: doctor.status,
         });
         setShowAddForm(true);
     };
 
-    const handleDelete = (doctorId: number) => {
+    const handleDelete = async (doctorId: number) => {
         if (window.confirm('Bạn có chắc chắn muốn xóa bác sĩ này?')) {
-            // For mock implementation, just filter out the doctor
-            const updatedDoctors = doctors.filter(doctor => doctor.id !== doctorId);
-            setDoctors(updatedDoctors);
-            setFilteredDoctors(updatedDoctors);
-            
-            // In real implementation, make an API call to delete the doctor
+            try {
+                await del(`/admin/doctors/${doctorId}`);
+                
+                // Cập nhật danh sách sau khi xóa
+                const updatedDoctors = doctors.filter(doctor => doctor.id !== doctorId);
+                setDoctors(updatedDoctors);
+                setFilteredDoctors(updatedDoctors);
+                
+                alert("Xóa bác sĩ thành công");
+            } catch (err: any) {
+                console.error("Failed to delete doctor:", err);
+                alert("Không thể xóa bác sĩ: " + (err.message || "Đã xảy ra lỗi"));
+            }
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setSubmitting(true);
+        setError(null);
         
-        if (selectedDoctor) {
-            // Update existing doctor
-            const updatedDoctors = doctors.map(doctor => 
-                doctor.id === selectedDoctor.id 
-                    ? { ...doctor, ...formData, status: formData.status as 'active' | 'inactive' } 
-                    : doctor
-            );
-            setDoctors(updatedDoctors);
-            setFilteredDoctors(updatedDoctors);
-        } else {
-            // Add new doctor
-            const newDoctor: Doctor = {
-                id: Math.max(...doctors.map(d => d.id), 0) + 1,
-                name: formData.name,
-                email: formData.email,
-                phone: formData.phone,
-                specialization: formData.specialization,
-                status: formData.status as 'active' | 'inactive'
-            };
+        try {
+            if (selectedDoctor) {
+                // API chưa hỗ trợ cập nhật, chỉ cập nhật local state tạm thời
+                console.warn("API update doctor not implemented yet, updating local state only");
+                const updatedDoctors = doctors.map(doctor => 
+                    doctor.id === selectedDoctor.id 
+                        ? { ...doctor, ...formData, status: formData.status as 'active' | 'inactive' } 
+                        : doctor
+                );
+                setDoctors(updatedDoctors);
+                setFilteredDoctors(updatedDoctors);
+            } else {
+                // Thêm bác sĩ mới
+                const response = await post<{ user_id: number; doctor_id: number; message: string }>('/admin/doctors', formData);
+                
+                // Sau khi thêm thành công, tải lại danh sách bác sĩ
+                fetchDoctors();
+                alert("Thêm bác sĩ thành công. Tài khoản đã được tạo với mật khẩu mặc định.");
+            }
+
+            // Reset form
+            setShowAddForm(false);
+            setSelectedDoctor(null);
+            setFormData({
+                name: '',
+                email: '',
+                phone: '',
+                specialization: '',
+                qualification: '',
+                status: 'active',
+            });
+        } catch (err: any) {
+            console.error("Error submitting doctor:", err);
             
-            const updatedDoctors = [...doctors, newDoctor];
-            setDoctors(updatedDoctors);
-            setFilteredDoctors(updatedDoctors);
+            // Special handling for authentication errors
+            if (err.message === 'Authentication required') {
+                setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                // Optional: Redirect to login after a short delay
+                setTimeout(() => {
+                    navigate('/admin/login');
+                }, 2000);
+                return;
+            }
+            
+            // Special handling for conflict errors (409) - typically email already exists
+            if (err.status === 409) {
+                setError(`Email ${formData.email} đã được sử dụng. Vui lòng sử dụng email khác.`);
+                return;
+            }
+            
+            const errorMessage = err.response?.data?.message || err.message || "Đã xảy ra lỗi khi lưu thông tin bác sĩ";
+            setError(errorMessage);
+        } finally {
+            setSubmitting(false);
         }
-
-        // Reset form
-        setShowAddForm(false);
-        setSelectedDoctor(null);
-        setFormData({
-            name: '',
-            email: '',
-            phone: '',
-            specialization: '',
-            status: 'active',
-        });
-
-        // In real implementation, make API calls to update or add doctors
     };
 
     if (loading) {
@@ -198,8 +241,10 @@ const AdminDoctorManagement: React.FC = () => {
                                 email: '',
                                 phone: '',
                                 specialization: '',
+                                qualification: '',
                                 status: 'active',
                             });
+                            setError(null);
                             setShowAddForm(true);
                         }}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
@@ -290,12 +335,37 @@ const AdminDoctorManagement: React.FC = () => {
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden">
                         <div className="px-6 py-4 border-b">
-                            <h3 className="text-lg font-medium text-gray-900">
-                                {selectedDoctor ? 'Cập nhật thông tin bác sĩ' : 'Thêm bác sĩ mới'}
-                            </h3>
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-medium text-gray-900">
+                                    {selectedDoctor ? 'Cập nhật thông tin bác sĩ' : 'Thêm bác sĩ mới'}
+                                </h3>
+                                <button 
+                                    onClick={() => setShowAddForm(false)}
+                                    className="text-gray-400 hover:text-gray-500"
+                                >
+                                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                         <form onSubmit={handleSubmit}>
-                            <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="px-6 py-4">
+                                {error && (
+                                    <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                                        <div className="flex">
+                                            <div className="flex-shrink-0">
+                                                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <div className="ml-3">
+                                                <p className="text-sm text-red-700">{error}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
                                     <input
@@ -317,6 +387,7 @@ const AdminDoctorManagement: React.FC = () => {
                                         onChange={handleChange}
                                         className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
+                                    <p className="mt-1 text-xs text-gray-500">Email này sẽ được dùng làm tên đăng nhập</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Chuyên khoa</label>
@@ -327,6 +398,18 @@ const AdminDoctorManagement: React.FC = () => {
                                         value={formData.specialization}
                                         onChange={handleChange}
                                         className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Học vị / Chứng chỉ</label>
+                                    <input
+                                        type="text"
+                                        name="qualification"
+                                        required
+                                        value={formData.qualification}
+                                        onChange={handleChange}
+                                        className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="MD, PhD, ..."
                                     />
                                 </div>
                                 <div>
@@ -352,20 +435,31 @@ const AdminDoctorManagement: React.FC = () => {
                                         <option value="inactive">Ngừng hoạt động</option>
                                     </select>
                                 </div>
+                                </div>
+                                
+                                {!selectedDoctor && (
+                                    <div className="mt-4 bg-blue-50 p-4 rounded-md">
+                                        <p className="text-sm text-blue-700">
+                                            <strong>Lưu ý:</strong> Hệ thống sẽ tự động tạo tài khoản cho bác sĩ với mật khẩu mặc định.
+                                            Bác sĩ sẽ được yêu cầu đổi mật khẩu khi đăng nhập lần đầu.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
-                            <div className="px-6 py-4 bg-gray-50 text-right space-x-3">
+                            <div className="px-6 py-3 bg-gray-50 text-right">
                                 <button
                                     type="button"
                                     onClick={() => setShowAddForm(false)}
-                                    className="px-4 py-2 border rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                                    className="py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 mr-2"
                                 >
                                     Hủy
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                                    className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={submitting}
                                 >
-                                    {selectedDoctor ? 'Cập nhật' : 'Thêm'}
+                                    {submitting ? 'Đang xử lý...' : selectedDoctor ? 'Cập nhật' : 'Thêm mới'}
                                 </button>
                             </div>
                         </form>

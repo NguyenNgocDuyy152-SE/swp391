@@ -33,21 +33,57 @@ const Contact: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Mô phỏng gửi dữ liệu
+        // Set loading state
         setFormStatus({
             submitted: true,
-            success: true,
-            message: 'Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi trong thời gian sớm nhất!'
+            success: false,
+            message: 'Đang gửi tin nhắn của bạn...'
         });
 
-        // Reset form sau khi gửi thành công
-        setFormData({
-            name: '',
-            email: '',
-            phone: '',
-            subject: '',
-            message: ''
-        });
+        try {
+            // Call the API to submit the contact form
+            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/contact/submit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Success message
+                setFormStatus({
+                    submitted: true,
+                    success: true,
+                    message: 'Cảm ơn bạn đã liên hệ. Chúng tôi sẽ phản hồi trong thời gian sớm nhất!'
+                });
+
+                // Reset form after successful submission
+                setFormData({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    subject: '',
+                    message: ''
+                });
+            } else {
+                // Error message
+                setFormStatus({
+                    submitted: true,
+                    success: false,
+                    message: `Lỗi: ${data.message || 'Không thể gửi tin nhắn. Vui lòng thử lại sau.'}`
+                });
+            }
+        } catch (error) {
+            console.error('Error submitting contact form:', error);
+            setFormStatus({
+                submitted: true,
+                success: false,
+                message: 'Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.'
+            });
+        }
     };
 
     return (

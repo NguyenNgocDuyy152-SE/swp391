@@ -14,7 +14,17 @@ from flask_mail import Mail, Message
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+# Configure CORS based on environment
+if os.environ.get('FLASK_ENV') == 'development':
+    # In development, allow all origins
+    CORS(app)
+else:
+    # In production, restrict to specific origins
+    # Get allowed origins from environment variable or default to frontend URL
+    allowed_origins = os.environ.get('ALLOWED_ORIGINS', 'https://swp391-frontend.onrender.com')
+    origins = allowed_origins.split(',')
+    CORS(app, resources={r"/api/*": {"origins": origins}})
+
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-123')
 
 # Email Configuration
@@ -32,49 +42,84 @@ app.register_blueprint(admin_bp, url_prefix='/api/admin')
 
 # Database configuration
 db_config = {
-    'host': os.getenv('DB_HOST', '127.0.0.1'),  # Địa chỉ IP của máy bạn bạn
-    'user': os.getenv('DB_USER', 'remote_user'),
-    'password': os.getenv('DB_PASSWORD', '#Nhatfw3124'),
-    'database': os.getenv('DB_NAME', 'swp391')
+    'host': os.getenv('DB_HOST'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'database': os.getenv('DB_NAME'),
+    'port': int(os.getenv('DB_PORT', 3306))
 }
 
 def get_db_connection():
     return mysql.connector.connect(**db_config)
 
 def create_users_table():
-    conn = get_db_connection()
+    # Connect to MySQL without specifying database
+    conn = mysql.connector.connect(
+        host=db_config['host'],
+        user=db_config['user'],
+        password=db_config['password']
+    )
     cursor = conn.cursor()
     
-    # Kiểm tra xem bảng users đã tồn tại chưa
-    cursor.execute("SHOW TABLES LIKE 'users'")
-    table_exists = cursor.fetchone()
+    # Create database if it doesn't exist
+    cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_config['database']}")
+    cursor.execute(f"USE {db_config['database']}")
     
-    if not table_exists:
-        # Tạo bảng mới nếu chưa tồn tại
-        cursor.execute('''
-            CREATE TABLE users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                email VARCHAR(255) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                role ENUM('patient', 'doctor', 'staff') NOT NULL DEFAULT 'patient',
-                password_changed TINYINT(1) DEFAULT 1 NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        print("Created users table with all fields")
-    else:
-        # Kiểm tra xem trường password_changed đã tồn tại chưa
-        try:
-            cursor.execute("SHOW COLUMNS FROM users LIKE 'password_changed'")
-            column_exists = cursor.fetchone()
-            
-            if not column_exists:
-                # Thêm trường password_changed nếu chưa tồn tại
-                cursor.execute("ALTER TABLE users ADD COLUMN password_changed TINYINT(1) DEFAULT 1 NOT NULL")
-                print("Added password_changed field to existing users table")
-        except Exception as e:
-            print(f"Error checking or adding password_changed field: {e}")
+    # Create users table if it doesn't exist
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        role ENUM('admin', 'patient', 'doctor', 'staff') NOT NULL DEFAULT 'patient',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        password_changed BOOLEAN DEFAULT TRUE
+    )
+    ''')
+    
+    # Create doctors table if it doesn't exist  
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS doctors (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        specialization VARCHAR(100) NOT NULL,
+        qualification VARCHAR(100) NOT NULL,
+        bio TEXT,
+        phone VARCHAR(20),
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+    ''')
+    
+    # Create consultation_requests table if it doesn't exist
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS consultation_requests (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        full_name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        service_type VARCHAR(100) NOT NULL,
+        preferred_date DATE NOT NULL,
+        preferred_time VARCHAR(50) NOT NULL,
+        message TEXT,
+        status ENUM('pending', 'confirmed', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+    
+    # Create contact_messages table if it doesn't exist
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS contact_messages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        subject VARCHAR(200) NOT NULL,
+        message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        status ENUM('new', 'read', 'replied') NOT NULL DEFAULT 'new'
+    )
+    ''')
     
     conn.commit()
     cursor.close()
@@ -194,7 +239,7 @@ def register():
     if role not in ['patient', 'doctor', 'staff']:
         return jsonify({'message': 'Invalid role. Must be patient, doctor, or staff'}), 400
 
-    hashed_password = generate_password_hash(password)
+    hashed_password = generate_password_hash(password, method='sha256')
     
     try:
         conn = get_db_connection()
@@ -574,7 +619,7 @@ def change_user_password():
             return jsonify({'message': 'Mật khẩu hiện tại không đúng'}), 401
         
         # Hash the new password
-        hashed_password = generate_password_hash(data['new_password'])
+        hashed_password = generate_password_hash(data['new_password'], method='sha256')
         
         # Update password and set password_changed = 1
         cursor.execute(
@@ -640,9 +685,15 @@ def create_test_doctor():
         
         print("Creating new test doctor account...")
         
-        # Mật khẩu mặc định: 12345678
+        # Mật khẩu mặc định đơn giản: test123
+        password = "test123"
+        print(f"Test doctor password: {password}")
+        
+        # Sử dụng Werkzeug để hash mật khẩu
         from werkzeug.security import generate_password_hash
-        hashed_password = generate_password_hash("12345678")
+        # Chỉ định phương thức sha256 để đảm bảo nhất quán
+        hashed_password = generate_password_hash(password, method='sha256')
+        print(f"Hashed password: {hashed_password}")
         
         # Tạo tài khoản người dùng với vai trò bác sĩ
         cursor.execute('''
@@ -663,6 +714,20 @@ def create_test_doctor():
         
         cursor.close()
         conn.close()
+        
+        # Test đăng nhập luôn
+        print("Testing login with the created account...")
+        try:
+            from werkzeug.security import check_password_hash
+            cursor = conn.cursor(dictionary=True)
+            cursor.execute("SELECT * FROM users WHERE email = 'doctor@example.com'")
+            user = cursor.fetchone()
+            login_result = check_password_hash(user['password'], password)
+            print(f"Login test result: {'SUCCESS' if login_result else 'FAILED'}")
+            cursor.close()
+        except Exception as e:
+            print(f"Login test error: {e}")
+            
     except Exception as e:
         print(f"Error creating test doctor: {e}")
 
@@ -733,10 +798,108 @@ def debug_tables():
     except Exception as e:
         return jsonify({'message': f'Error: {str(e)}'}), 500
 
+@app.route('/api/contact/submit', methods=['POST'])
+def submit_contact_form():
+    data = request.get_json()
+    
+    # Validate required fields
+    required_fields = ['name', 'email', 'phone', 'subject', 'message']
+    if not all(field in data for field in required_fields):
+        return jsonify({'message': 'Missing required fields'}), 400
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Save the contact message to the database
+        query = '''
+            INSERT INTO contact_messages 
+            (name, email, phone, subject, message, created_at, status) 
+            VALUES (%s, %s, %s, %s, %s, NOW(), %s)
+        '''
+        values = (
+            data['name'],
+            data['email'],
+            data['phone'],
+            data['subject'],
+            data['message'],
+            'new'
+        )
+        cursor.execute(query, values)
+        message_id = cursor.lastrowid
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        # Send confirmation email
+        try:
+            send_contact_confirmation_email(data)
+            return jsonify({
+                'message': 'Your message has been sent successfully. We will contact you soon!',
+                'message_id': message_id
+            }), 201
+        except Exception as mail_error:
+            print(f"Contact confirmation email failed: {str(mail_error)}")
+            return jsonify({
+                'message': 'Your message has been sent successfully but confirmation email failed',
+                'message_id': message_id
+            }), 201
+            
+    except Exception as e:
+        return jsonify({'message': f'Error submitting contact form: {str(e)}'}), 500
+
+def send_contact_confirmation_email(contact_data):
+    """Send confirmation email to the user who submitted a contact form"""
+    subject = f"TINH TRUNG CHILL - Xác nhận đã nhận tin nhắn của bạn"
+    
+    body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+            <h2 style="color: #0056b3; text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px;">Xác Nhận Đã Nhận Tin Nhắn</h2>
+            
+            <p>Kính gửi <strong>{contact_data['name']}</strong>,</p>
+            
+            <p>Cảm ơn bạn đã liên hệ với TINH TRUNG CHILL. Chúng tôi đã nhận được tin nhắn của bạn với nội dung sau:</p>
+            
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <p><strong>Chủ đề:</strong> {contact_data['subject']}</p>
+                <p><strong>Nội dung:</strong> {contact_data['message']}</p>
+            </div>
+            
+            <p>Đội ngũ của chúng tôi sẽ xem xét tin nhắn của bạn và phản hồi trong thời gian sớm nhất.</p>
+            
+            <p>Nếu bạn có bất kỳ câu hỏi nào khác, vui lòng liên hệ với chúng tôi qua email hoặc gọi đến số hotline: <strong>0123 456 789</strong>.</p>
+            
+            <p style="margin-top: 20px;">Trân trọng,</p>
+            <p><strong>Đội ngũ TINH TRUNG CHILL</strong></p>
+            
+            <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #666; border-top: 1px solid #eee; padding-top: 10px;">
+                <p>Email này được gửi tự động, vui lòng không trả lời email này.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    # Create and send email
+    msg = Message(
+        subject=subject,
+        recipients=[contact_data['email']],
+        html=body
+    )
+    mail.send(msg)
+
 if __name__ == '__main__':
     create_users_table()
     create_consultation_requests_table()
     create_doctors_table()
     update_database_structure()
-    create_test_doctor()
-    app.run(debug=True, port=5001) 
+    
+    # Only create test doctor in development
+    if os.environ.get('FLASK_ENV') == 'development':
+        create_test_doctor()
+    
+    # Get port from environment variable for Render.com or use default 5001
+    port = int(os.environ.get('PORT', 5001))
+    app.run(host='0.0.0.0', port=port, debug=os.environ.get('FLASK_ENV') == 'development') 

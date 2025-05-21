@@ -1,68 +1,68 @@
-# Simple Website with React Frontend and Python Backend
+# SWP391 - TINH TRUNG CHILL Project
 
-This project consists of a React frontend with Tailwind CSS and a Python Flask backend with MySQL database.
+A web application for a medical center specializing in reproductive health.
 
-## Frontend Setup
+## Project Structure
 
-1. Navigate to the frontend directory:
-```bash
-cd frontend
-```
+- **Frontend**: React application
+- **Backend**: Flask API
 
-2. Install dependencies:
-```bash
-npm install
-```
+## Deployment to Render.com
 
-3. Start the development server:
-```bash
-npm start
-```
+### Prerequisites
 
-The frontend will be available at http://localhost:3000
+1. Create a Render.com account
+2. Set up a MySQL database (can use Render.com's database service or external service)
 
-## Backend Setup
+### Deployment Steps
 
-1. Install Python (if not already installed)
-2. Navigate to the backend directory:
+1. Push your code to a GitHub repository
+2. In Render.com Dashboard, click "New" and select "Blueprint"
+3. Connect your GitHub repository
+4. Render will automatically detect the `render.yaml` file and set up the services
+5. Configure the environment variables in Render dashboard:
+   - Database credentials
+   - Email configuration
+   - Secret key
+
+### Environment Variables
+
+#### Backend
+- `DB_HOST`: MySQL database host
+- `DB_USER`: Database username
+- `DB_PASSWORD`: Database password
+- `DB_NAME`: Database name
+- `SECRET_KEY`: Secret key for JWT
+- `MAIL_SERVER`: SMTP server address
+- `MAIL_PORT`: SMTP server port
+- `MAIL_USERNAME`: Email username
+- `MAIL_PASSWORD`: Email password
+- `MAIL_DEFAULT_SENDER`: Default email sender
+
+#### Frontend
+- `REACT_APP_API_URL`: URL of the backend API
+
+## Local Development
+
+### Backend Setup
+
 ```bash
 cd backend
-```
-
-3. Create a virtual environment:
-```bash
-python -m venv venv
-```
-
-4. Activate the virtual environment:
-- Windows:
-```bash
-venv\Scripts\activate
-```
-- Unix/MacOS:
-```bash
-source venv/bin/activate
-```
-
-5. Install dependencies:
-```bash
 pip install -r requirements.txt
-```
-
-6. Create a `.env` file based on `.env.example` and configure your database settings
-
-7. Start the backend server:
-```bash
 python app.py
 ```
 
-The backend will be available at http://localhost:5000
+### Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm start
+```
 
 ## Database Setup
 
-1. Install MySQL if not already installed
-2. Create a new database
-3. Update the `.env` file with your database credentials
+The application will automatically create the required tables when started. For production, it's recommended to set up the database structure manually.
 
 ## Features
 
