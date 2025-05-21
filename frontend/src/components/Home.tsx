@@ -200,6 +200,11 @@ export const Home: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Admin Login Link */}
+            <div className="text-center mt-6">
+                <a href="/admin/login" className="text-xs text-gray-500 hover:text-gray-700">Đăng nhập quản trị</a>
+            </div>
         </div>
     );
 };
