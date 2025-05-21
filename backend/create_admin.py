@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from argon2 import PasswordHasher
+from argon2 import PasswordHasher, Type
 from db_utils import DatabaseManager
 import getpass
 import os
@@ -51,7 +51,7 @@ def create_root_admin():
         break
     
     # Mã hóa mật khẩu với Argon2id
-    ph = PasswordHasher(time_cost=2, memory_cost=102400, parallelism=8, type='ID')
+    ph = PasswordHasher(time_cost=2, memory_cost=102400, parallelism=8, type=Type.ID)
     hashed_password = ph.hash(password)
     
     # Thêm hoặc cập nhật admin

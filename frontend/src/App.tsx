@@ -10,11 +10,22 @@ import Services from './components/Services';
 import Contact from './components/Contact';
 import Appointment from './pages/Appointment';
 import BlogPost from './pages/BlogPost';
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboardContent from './pages/AdminDashboardContent';
+import AdminDoctorManagement from './pages/AdminDoctorManagement';
+import AdminLayout from './components/AdminLayout';
 
 function App() {
   return (
     <Router>
       <Routes>
+        {/* Admin routes with shared layout */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route element={<AdminLayout />}>
+          <Route path="/admin/dashboard" element={<AdminDashboardContent />} />
+          <Route path="/admin/doctors" element={<AdminDoctorManagement />} />
+        </Route>
+
         {/* Dashboard routes */}
         <Route path="/dashboard" element={<Dashboard />}>
           <Route path="appointments" element={
