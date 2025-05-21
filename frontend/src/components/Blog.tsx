@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Blog: React.FC = () => {
     // State để xử lý lỗi hình ảnh
@@ -7,6 +8,7 @@ const Blog: React.FC = () => {
     const [visiblePosts, setVisiblePosts] = useState(6);
     // State để kiểm tra xem đã hiển thị hết bài viết chưa
     const [showLoadMore, setShowLoadMore] = useState(true);
+    const navigate = useNavigate();
 
     // Chuyển đổi chuỗi ngày sang đối tượng Date
     const parseDate = (dateStr: string) => {
@@ -157,6 +159,11 @@ const Blog: React.FC = () => {
         }
     };
 
+    // Hàm để chuyển đến trang chi tiết bài viết
+    const goToPost = (id: number) => {
+        navigate(`/blog/${id}`);
+    };
+
     return (
         <div className="bg-white py-16">
             <div className="container mx-auto px-4">
@@ -168,7 +175,7 @@ const Blog: React.FC = () => {
                 {/* Recent Blog Section */}
                 <div className="mb-16 p-6 bg-gray-100 rounded-lg shadow-md">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="md:col-span-1 relative h-64 rounded-lg overflow-hidden">
+                        <div className="md:col-span-1 relative h-64 rounded-lg overflow-hidden cursor-pointer" onClick={() => goToPost(1)}>
                             <img
                                 src={imgError ? fallbackImage : featuredPost.image}
                                 alt="Bài viết gần đây"
@@ -178,13 +185,13 @@ const Blog: React.FC = () => {
                         </div>
                         <div className="md:col-span-2 flex flex-col justify-center">
                             <h4 className="text-blue-600 text-sm font-semibold mb-2">BÀI VIẾT GẦN ĐÂY</h4>
-                            <h3 className="text-2xl font-bold mb-4">
+                            <h3 className="text-2xl font-bold mb-4 cursor-pointer hover:text-blue-600 transition-colors" onClick={() => goToPost(1)}>
                                 {featuredPost.title}
                             </h3>
                             <p className="text-gray-600 mb-4">
                                 {featuredPost.excerpt}
                             </p>
-                            <a href="#" className="text-blue-600 hover:underline font-semibold">Đọc bài viết</a>
+                            <button onClick={() => goToPost(1)} className="text-blue-600 hover:underline font-semibold w-fit">Đọc bài viết</button>
                         </div>
                     </div>
                 </div>
@@ -207,7 +214,11 @@ const Blog: React.FC = () => {
                 {/* Blog Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {blogPosts.map((post) => (
-                        <div key={post.id} className="bg-gray-50 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                        <div
+                            key={post.id}
+                            className="bg-gray-50 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                            onClick={() => goToPost(post.id)}
+                        >
                             <div className="relative h-48 overflow-hidden">
                                 <img
                                     src={post.image}
@@ -222,7 +233,7 @@ const Blog: React.FC = () => {
                             </div>
                             <div className="p-6">
                                 <span className="text-blue-600 text-sm font-medium mb-2 block">{post.category}</span>
-                                <h3 className="text-xl font-bold mb-2">
+                                <h3 className="text-xl font-bold mb-2 hover:text-blue-600 transition-colors">
                                     {post.title}
                                 </h3>
                                 <p className="text-gray-600 text-sm mb-4">
