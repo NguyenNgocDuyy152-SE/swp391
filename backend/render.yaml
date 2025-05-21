@@ -23,13 +23,13 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DB_HOST
-        sync: false
+        value: localhost
       - key: DB_USER
-        sync: false
+        value: nhatpm
       - key: DB_PASSWORD
-        sync: false
+        value: '#Nhatfw3124'
       - key: DB_NAME
-        sync: false
+        value: swp391
 
   # Frontend React app
   - type: web

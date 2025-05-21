@@ -5,7 +5,7 @@ def create_nhatpm_user():
     try:
         # Connect to MySQL as root
         print("Connecting to MySQL as root...")
-        root_password = input("Enter root MySQL password: ")
+        root_password = "#Nhatfw3124"  # Using the provided password directly
         conn = mysql.connector.connect(
             host="localhost",
             user="root",
