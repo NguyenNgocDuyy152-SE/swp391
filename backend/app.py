@@ -890,6 +890,10 @@ def send_contact_confirmation_email(contact_data):
     )
     mail.send(msg)
 
+@app.route("/")
+def home():
+    return "Backend is running!"
+
 if __name__ == '__main__':
     create_users_table()
     create_consultation_requests_table()
